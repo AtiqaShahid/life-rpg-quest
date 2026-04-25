@@ -14,16 +14,221 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      achievements: {
+        Row: {
+          code: string
+          description: string | null
+          id: string
+          title: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          code: string
+          description?: string | null
+          id?: string
+          title: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          description?: string | null
+          id?: string
+          title?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      activities: {
+        Row: {
+          created_at: string
+          id: string
+          note: string | null
+          type_id: string
+          user_id: string
+          xp_gained: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          type_id: string
+          user_id: string
+          xp_gained: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note?: string | null
+          type_id?: string
+          user_id?: string
+          xp_gained?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activities_type_id_fkey"
+            columns: ["type_id"]
+            isOneToOne: false
+            referencedRelation: "activity_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_types: {
+        Row: {
+          description: string | null
+          icon: string
+          id: string
+          label: string
+          stat: Database["public"]["Enums"]["stat_kind"]
+          xp: number
+        }
+        Insert: {
+          description?: string | null
+          icon: string
+          id: string
+          label: string
+          stat: Database["public"]["Enums"]["stat_kind"]
+          xp: number
+        }
+        Update: {
+          description?: string | null
+          icon?: string
+          id?: string
+          label?: string
+          stat?: Database["public"]["Enums"]["stat_kind"]
+          xp?: number
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          id: string
+          level: number
+          updated_at: string
+          user_id: string
+          username: string
+          xp: number
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          level?: number
+          updated_at?: string
+          user_id: string
+          username: string
+          xp?: number
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          level?: number
+          updated_at?: string
+          user_id?: string
+          username?: string
+          xp?: number
+        }
+        Relationships: []
+      }
+      quests: {
+        Row: {
+          completed: boolean
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_daily: boolean
+          reward_xp: number
+          title: string
+          user_id: string
+        }
+        Insert: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_daily?: boolean
+          reward_xp?: number
+          title: string
+          user_id: string
+        }
+        Update: {
+          completed?: boolean
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_daily?: boolean
+          reward_xp?: number
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stats: {
+        Row: {
+          charisma: number
+          discipline: number
+          intelligence: number
+          strength: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          charisma?: number
+          discipline?: number
+          intelligence?: number
+          strength?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          charisma?: number
+          discipline?: number
+          intelligence?: number
+          strength?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      streaks: {
+        Row: {
+          current_streak: number
+          last_active_date: string | null
+          longest_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          current_streak?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          current_streak?: number
+          last_active_date?: string | null
+          longest_streak?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reset_daily_quests: { Args: { p_user: string }; Returns: undefined }
     }
     Enums: {
-      [_ in never]: never
+      stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +355,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      stat_kind: ["intelligence", "strength", "discipline", "charisma"],
+    },
   },
 } as const
