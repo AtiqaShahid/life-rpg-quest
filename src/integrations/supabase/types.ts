@@ -43,25 +43,34 @@ export type Database = {
       }
       activities: {
         Row: {
+          activity_date: string
           created_at: string
+          duration_minutes: number | null
           id: string
           note: string | null
+          subtype: string | null
           type_id: string
           user_id: string
           xp_gained: number
         }
         Insert: {
+          activity_date?: string
           created_at?: string
+          duration_minutes?: number | null
           id?: string
           note?: string | null
+          subtype?: string | null
           type_id: string
           user_id: string
           xp_gained: number
         }
         Update: {
+          activity_date?: string
           created_at?: string
+          duration_minutes?: number | null
           id?: string
           note?: string | null
+          subtype?: string | null
           type_id?: string
           user_id?: string
           xp_gained?: number
@@ -225,6 +234,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      compute_activity_xp: {
+        Args: { p_duration: number; p_subtype: string; p_type: string }
+        Returns: number
+      }
+      log_activity: {
+        Args: {
+          p_duration: number
+          p_note?: string
+          p_subtype: string
+          p_type: string
+        }
+        Returns: Json
+      }
       reset_daily_quests: { Args: { p_user: string }; Returns: undefined }
     }
     Enums: {
