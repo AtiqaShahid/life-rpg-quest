@@ -8,7 +8,17 @@ export type Profile = { id: string; user_id: string; username: string; avatar_ur
 export type Stats = { user_id: string; intelligence: number; strength: number; discipline: number; charisma: number };
 export type Streak = { user_id: string; current_streak: number; longest_streak: number; last_active_date: string | null };
 export type ActivityType = { id: string; label: string; icon: string; stat: StatKey; xp: number; description: string | null };
-export type Activity = { id: string; user_id: string; type_id: string; xp_gained: number; note: string | null; created_at: string };
+export type Activity = {
+  id: string;
+  user_id: string;
+  type_id: string;
+  subtype: string | null;
+  duration_minutes: number | null;
+  activity_date: string;
+  xp_gained: number;
+  note: string | null;
+  created_at: string;
+};
 export type Quest = { id: string; user_id: string; title: string; reward_xp: number; is_daily: boolean; completed: boolean; completed_at: string | null; created_at: string };
 export type Achievement = { id: string; code: string; title: string; description: string | null; unlocked_at: string };
 
@@ -116,17 +126,50 @@ export function usePlayer() {
     });
   }, [user, profile, stats, streak, activities, checkAchievements]);
 
-  const logActivity = useCallback(async (typeId: string, note?: string) => {
-    if (!user) return;
+  /**
+   * Logs a structured activity via the secure `log_activity` RPC.
+   * The server validates the user, computes XP from (type, subtype, duration),
+   * and rejects duplicates for the same (user, type, subtype, day).
+   */
+  const logActivity = useCallback(async (
+    typeId: string,
+    subtype: string,
+    duration: number,
+    note?: string,
+  ): Promise<{ ok: boolean; reason?: string }> => {
+    if (!user) return { ok: false, reason: "not_authenticated" };
     const t = activityTypes.find(a => a.id === typeId);
-    if (!t) return;
-    const { data, error } = await supabase.from("activities").insert({
-      user_id: user.id, type_id: typeId, xp_gained: t.xp, note: note || null,
-    }).select().single();
-    if (error) { toast.error(error.message); return; }
-    setActivities(prev => [data as Activity, ...prev]);
-    await awardXp(t.xp, t.stat);
-    toast.success(`+${t.xp} XP — ${t.label}`);
+    if (!t) return { ok: false, reason: "invalid_activity_type" };
+
+    const { data, error } = await supabase.rpc("log_activity", {
+      p_type: typeId,
+      p_subtype: subtype,
+      p_duration: duration,
+      p_note: note ?? null,
+    });
+    if (error) {
+      toast.error(error.message);
+      return { ok: false, reason: error.message };
+    }
+
+    const result = data as { ok: boolean; reason?: string; activity?: Activity; xp_gained?: number };
+    if (!result.ok) {
+      if (result.reason === "already_completed_today") {
+        toast.info("Already completed today", {
+          description: `You've already logged ${t.label} today. Come back tomorrow!`,
+        });
+      } else {
+        toast.error(result.reason ?? "Could not log activity");
+      }
+      return { ok: false, reason: result.reason };
+    }
+
+    const inserted = result.activity as Activity;
+    const xp = result.xp_gained ?? inserted.xp_gained;
+    setActivities(prev => [inserted, ...prev]);
+    await awardXp(xp, t.stat);
+    toast.success(`+${xp} XP — ${t.label}`);
+    return { ok: true };
   }, [user, activityTypes, awardXp]);
 
   const completeQuest = useCallback(async (questId: string) => {
