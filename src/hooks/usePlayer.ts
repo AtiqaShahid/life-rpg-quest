@@ -79,20 +79,31 @@ export function usePlayer() {
     const sUpdate = streakUpdate(streak.current_streak, streak.last_active_date);
     const newLongest = Math.max(streak.longest_streak, sUpdate.current_streak);
 
-    const updates: Promise<unknown>[] = [
-      supabase.from("profiles").update({ level: result.level, xp: result.xp }).eq("user_id", user.id),
-      supabase.from("streaks").update({
-        current_streak: sUpdate.current_streak,
-        last_active_date: sUpdate.last_active_date,
-        longest_streak: newLongest,
-      }).eq("user_id", user.id),
-    ];
-    if (statBoost) {
-      updates.push(
-        supabase.from("stats").update({ [statBoost]: stats[statBoost] + STAT_GAIN_PER_ACTIVITY }).eq("user_id", user.id)
-      );
-    }
-    await Promise.all(updates);
+    await Promise.all([
+      Promise.resolve(
+        supabase.from("profiles").update({ level: result.level, xp: result.xp }).eq("user_id", user.id)
+      ),
+      Promise.resolve(
+        supabase.from("streaks").update({
+          current_streak: sUpdate.current_streak,
+          last_active_date: sUpdate.last_active_date,
+          longest_streak: newLongest,
+        }).eq("user_id", user.id)
+      ),
+      statBoost
+        ? Promise.resolve(
+            supabase
+              .from("stats")
+              .update({
+                intelligence: statBoost === "intelligence" ? stats.intelligence + STAT_GAIN_PER_ACTIVITY : stats.intelligence,
+                strength:     statBoost === "strength"     ? stats.strength     + STAT_GAIN_PER_ACTIVITY : stats.strength,
+                discipline:   statBoost === "discipline"   ? stats.discipline   + STAT_GAIN_PER_ACTIVITY : stats.discipline,
+                charisma:     statBoost === "charisma"     ? stats.charisma     + STAT_GAIN_PER_ACTIVITY : stats.charisma,
+              })
+              .eq("user_id", user.id)
+          )
+        : Promise.resolve(null),
+    ]);
 
     setProfile({ ...profile, level: result.level, xp: result.xp });
     setStreak({ ...streak, current_streak: sUpdate.current_streak, last_active_date: sUpdate.last_active_date, longest_streak: newLongest });
