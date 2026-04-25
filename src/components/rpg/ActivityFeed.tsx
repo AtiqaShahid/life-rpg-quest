@@ -2,6 +2,7 @@ import { Activity, ActivityType } from "@/hooks/usePlayer";
 import * as Lucide from "lucide-react";
 import { statMeta } from "@/lib/rpg";
 import { formatDistanceToNow } from "date-fns";
+import { subtypeLabel } from "@/lib/activityCatalog";
 
 export const ActivityFeed = ({ activities, types }: { activities: Activity[]; types: ActivityType[] }) => {
   if (!activities.length) {
@@ -17,6 +18,8 @@ export const ActivityFeed = ({ activities, types }: { activities: Activity[]; ty
         const t = types.find(x => x.id === a.type_id);
         const Icon = t ? ((Lucide as unknown as Record<string, Lucide.LucideIcon>)[t.icon] ?? Lucide.Zap) : Lucide.Zap;
         const color = t ? `hsl(${statMeta[t.stat].colorVar})` : "hsl(var(--primary))";
+        const sub = subtypeLabel(a.type_id, a.subtype);
+        const meta = [sub, a.duration_minutes ? `${a.duration_minutes} min` : null].filter(Boolean).join(" • ");
         return (
           <div key={a.id} className="glass flex items-center gap-3 rounded-xl p-3 animate-fade-in">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg ring-1 ring-white/10"
@@ -25,6 +28,7 @@ export const ActivityFeed = ({ activities, types }: { activities: Activity[]; ty
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate font-medium leading-tight">{t?.label ?? a.type_id}</div>
+              {meta && <div className="truncate font-mono text-[11px] text-muted-foreground">{meta}</div>}
               {a.note && <div className="truncate text-xs text-muted-foreground">{a.note}</div>}
             </div>
             <div className="text-right">
