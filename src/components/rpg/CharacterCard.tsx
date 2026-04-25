@@ -28,17 +28,15 @@ export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }:
 
   return (
     <div className="glass-strong relative overflow-hidden rounded-3xl p-6 sm:p-8 animate-scale-in">
-      {/* Decorative orbits */}
-      <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-24 -left-20 h-60 w-60 rounded-full bg-secondary/20 blur-3xl" />
-      <div className="pointer-events-none absolute inset-0 opacity-40" style={{ background: "radial-gradient(circle at 30% 30%, hsl(var(--accent) / 0.08), transparent 60%)" }} />
+      {/* Soft warm decorative wash */}
+      <div className="pointer-events-none absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary/10 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-24 -left-20 h-60 w-60 rounded-full bg-secondary/10 blur-3xl" />
 
       <div className="relative grid items-center gap-6 sm:grid-cols-[auto,1fr] sm:gap-8">
         {/* Avatar */}
         <div className="relative mx-auto sm:mx-0">
-          <div className="absolute inset-0 -m-3 rounded-full bg-gradient-cyber opacity-50 blur-2xl animate-breathe" />
-          <div className="absolute inset-0 -m-1 rounded-full bg-gradient-cool opacity-70 blur" />
-          <div className="relative h-40 w-40 sm:h-48 sm:w-48 overflow-hidden rounded-full ring-2 ring-primary/60 shadow-glow-primary animate-breathe">
+          <div className="absolute inset-0 -m-2 rounded-full bg-gradient-warm opacity-20 blur-xl" />
+          <div className="relative h-40 w-40 sm:h-48 sm:w-48 overflow-hidden rounded-full ring-2 ring-primary/30 shadow-elegant animate-breathe">
             <img
               src={avatarSrc}
               alt={`${profile.username} character avatar`}
