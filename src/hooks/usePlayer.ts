@@ -24,6 +24,33 @@ export type Activity = {
   created_at: string;
 };
 export type Quest = { id: string; user_id: string; title: string; reward_xp: number; is_daily: boolean; completed: boolean; completed_at: string | null; created_at: string };
+
+export type QuestType = "daily" | "weekly" | "epic" | "dynamic";
+export type QuestEnergy = "low" | "medium" | "high";
+export type QuestStatus = "active" | "completed" | "failed" | "paused";
+export type QuestCriteria = { type_id?: string | string[]; min_duration?: number; min_difficulty?: string };
+
+export type QuestRich = Quest & {
+  description: string | null;
+  quest_type: QuestType;
+  difficulty: number;
+  linked_stats: string[];
+  energy: QuestEnergy;
+  criteria: QuestCriteria;
+  status: QuestStatus;
+  expires_at: string | null;
+  template_key: string | null;
+  generation_reason: string | null;
+};
+
+export type QuestProgress = {
+  id: string;
+  quest_id: string;
+  user_id: string;
+  current: number;
+  target: number;
+  unit: "count" | "minutes" | "xp";
+};
 export type Achievement = { id: string; code: string; title: string; description: string | null; unlocked_at: string };
 
 export function usePlayer() {
@@ -37,13 +64,14 @@ export function usePlayer() {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [skillCatalog, setSkillCatalog] = useState<SkillCatalog[]>([]);
   const [skillNodes, setSkillNodes] = useState<SkillNode[]>([]);
+  const [questProgress, setQuestProgress] = useState<QuestProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [xpFlash, setXpFlash] = useState<{ amount: number; key: number } | null>(null);
   const [levelUpFlash, setLevelUpFlash] = useState<{ to: number; key: number } | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
-    const [p, s, sk, at, ac, q, ach, sc, sn] = await Promise.all([
+    const [p, s, sk, at, ac, q, ach, sc, sn, qp] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("stats").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("streaks").select("*").eq("user_id", user.id).maybeSingle(),
@@ -53,16 +81,18 @@ export function usePlayer() {
       supabase.from("achievements").select("*").eq("user_id", user.id).order("unlocked_at", { ascending: false }),
       supabase.from("skill_catalog").select("*").order("sort_order", { ascending: true }),
       supabase.from("skill_nodes").select("skill_id, level").eq("user_id", user.id),
+      supabase.from("quest_progress").select("*").eq("user_id", user.id),
     ]);
     setProfile(p.data as Profile | null);
     setStats(s.data as Stats | null);
     setStreak(sk.data as Streak | null);
     setActivityTypes((at.data ?? []) as ActivityType[]);
     setActivities((ac.data ?? []) as unknown as Activity[]);
-    setQuests((q.data ?? []) as Quest[]);
+    setQuests((q.data ?? []) as unknown as Quest[]);
     setAchievements((ach.data ?? []) as Achievement[]);
     setSkillCatalog(((sc.data ?? []) as unknown as SkillCatalog[]));
     setSkillNodes(((sn.data ?? []) as unknown as SkillNode[]));
+    setQuestProgress(((qp.data ?? []) as unknown as QuestProgress[]));
     setLoading(false);
   }, [user]);
 
@@ -257,14 +287,33 @@ export function usePlayer() {
     if (!user) return;
     const q = quests.find(x => x.id === questId);
     if (!q || q.completed) return;
-    const { error } = await supabase.from("quests").update({
-      completed: true, completed_at: new Date().toISOString(),
-    }).eq("id", questId);
+    const { data, error } = await supabase.rpc("complete_quest", { p_quest_id: questId });
     if (error) { toast.error(error.message); return; }
-    setQuests(prev => prev.map(x => x.id === questId ? { ...x, completed: true, completed_at: new Date().toISOString() } : x));
-    await awardXp(q.reward_xp);
-    toast.success(`Quest complete! +${q.reward_xp} XP`);
-  }, [user, quests, awardXp]);
+    const r = data as {
+      ok: boolean; reason?: string; xp_gained?: number;
+      levels_gained?: number; new_level?: number; new_xp?: number; skill_points_awarded?: number;
+    };
+    if (!r.ok) { toast.info(r.reason ?? "Could not complete quest"); return; }
+
+    setQuests(prev => prev.map(x => x.id === questId
+      ? { ...x, completed: true, completed_at: new Date().toISOString(), reward_xp: r.xp_gained ?? x.reward_xp }
+      : x));
+    setXpFlash({ amount: r.xp_gained ?? 0, key: Date.now() });
+    if ((r.levels_gained ?? 0) > 0 && r.new_level) {
+      setLevelUpFlash({ to: r.new_level, key: Date.now() });
+      toast.success(`⚡ LEVEL UP! Reached level ${r.new_level}`, {
+        description: `+${r.skill_points_awarded ?? 0} skill points to spend.`,
+      });
+    }
+    if (profile && r.new_level !== undefined && r.new_xp !== undefined) {
+      setProfile({
+        ...profile, level: r.new_level, xp: r.new_xp,
+        skill_points: profile.skill_points + (r.skill_points_awarded ?? 0),
+      });
+    }
+    toast.success(`Quest complete! +${r.xp_gained ?? 0} XP`);
+    await refresh();
+  }, [user, quests, profile, refresh]);
 
   const addQuest = useCallback(async (title: string, reward_xp: number) => {
     if (!user) return;
@@ -289,13 +338,46 @@ export function usePlayer() {
     setProfile({ ...profile, ...patch });
   }, [user, profile]);
 
+  /** Generate template-driven quests (daily/weekly/epic) via RPC. */
+  const generateQuests = useCallback(async (force = false) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("generate_quests", { p_force: force });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; generated: number; reason?: string };
+    if (r.generated === 0) {
+      toast.info(r.reason === "enough_active_quests" ? "You already have plenty of quests." : "No new quests right now.");
+    } else {
+      toast.success(`+${r.generated} new quest${r.generated > 1 ? "s" : ""}`);
+    }
+    await refresh();
+    return { ok: true, generated: r.generated };
+  }, [user, refresh]);
+
+  /** Generate AI dynamic quests via the edge function. */
+  const generateDynamicQuests = useCallback(async () => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests");
+    if (error) {
+      toast.error("Could not generate AI quests right now.");
+      return { ok: false };
+    }
+    const r = data as { ok?: boolean; generated?: number; error?: string };
+    if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
+    else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
+    else if (r.generated && r.generated > 0) toast.success(`+${r.generated} AI quest${r.generated > 1 ? "s" : ""}`);
+    else toast.info("No AI quests generated.");
+    await refresh();
+    return { ok: !!r.ok, generated: r.generated ?? 0 };
+  }, [user, refresh]);
+
   const xpNeeded = useMemo(() => profile ? xpToNext(profile.level) : 100, [profile]);
 
   return {
     loading, profile, stats, streak, activityTypes, activities, quests, achievements,
     skillCatalog, skillNodes,
+    questProgress,
     xpNeeded, xpFlash, levelUpFlash,
     refresh, logActivity, completeQuest, addQuest, removeQuest, updateProfile, awardXp,
-    upgradeSkill,
+    upgradeSkill, generateQuests, generateDynamicQuests,
   };
 }
