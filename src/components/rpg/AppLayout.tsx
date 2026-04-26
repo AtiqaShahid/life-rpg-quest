@@ -3,6 +3,7 @@ import { NavLink, Outlet } from "react-router-dom";
 import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { EarnXpBar } from "./EarnXpBar";
 
 const NAV = [
   { to: "/app",              icon: LayoutDashboard, label: "Dashboard" },
@@ -79,14 +80,14 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
       </header>
 
       {/* Main */}
-      <main className="flex-1 px-4 pt-16 pb-24 sm:px-6 md:px-8 md:pt-6 md:pb-8">
+      <main className="flex-1 overflow-y-auto px-4 pt-16 pb-44 sm:px-6 md:px-8 md:pt-6 md:pb-32">
         <div className="mx-auto max-w-6xl animate-fade-in">
           {children ?? <Outlet />}
         </div>
       </main>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border/50 bg-background/80 backdrop-blur-xl md:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl md:hidden">
         <div className="grid grid-cols-7 gap-1 px-2 py-2">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === "/app"} className={mobileLinkClass}>
@@ -96,6 +97,9 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
           ))}
         </div>
       </nav>
+
+      {/* Always-visible Earn XP action bar */}
+      <EarnXpBar />
     </div>
   );
 };
