@@ -44,9 +44,12 @@ export type Database = {
       activities: {
         Row: {
           activity_date: string
+          base_xp: number | null
           created_at: string
+          difficulty: Database["public"]["Enums"]["activity_difficulty"]
           duration_minutes: number | null
           id: string
+          multiplier_breakdown: Json | null
           note: string | null
           subtype: string | null
           type_id: string
@@ -55,9 +58,12 @@ export type Database = {
         }
         Insert: {
           activity_date?: string
+          base_xp?: number | null
           created_at?: string
+          difficulty?: Database["public"]["Enums"]["activity_difficulty"]
           duration_minutes?: number | null
           id?: string
+          multiplier_breakdown?: Json | null
           note?: string | null
           subtype?: string | null
           type_id: string
@@ -66,9 +72,12 @@ export type Database = {
         }
         Update: {
           activity_date?: string
+          base_xp?: number | null
           created_at?: string
+          difficulty?: Database["public"]["Enums"]["activity_difficulty"]
           duration_minutes?: number | null
           id?: string
+          multiplier_breakdown?: Json | null
           note?: string | null
           subtype?: string | null
           type_id?: string
@@ -118,6 +127,7 @@ export type Database = {
           created_at: string
           id: string
           level: number
+          skill_points: number
           updated_at: string
           user_id: string
           username: string
@@ -128,6 +138,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: number
+          skill_points?: number
           updated_at?: string
           user_id: string
           username: string
@@ -138,6 +149,7 @@ export type Database = {
           created_at?: string
           id?: string
           level?: number
+          skill_points?: number
           updated_at?: string
           user_id?: string
           username?: string
@@ -177,6 +189,82 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      skill_catalog: {
+        Row: {
+          cost_per_level: number
+          description: string
+          effect: Json
+          id: string
+          label: string
+          max_level: number
+          parent_id: string | null
+          sort_order: number
+          stat: string
+        }
+        Insert: {
+          cost_per_level?: number
+          description: string
+          effect: Json
+          id: string
+          label: string
+          max_level?: number
+          parent_id?: string | null
+          sort_order?: number
+          stat: string
+        }
+        Update: {
+          cost_per_level?: number
+          description?: string
+          effect?: Json
+          id?: string
+          label?: string
+          max_level?: number
+          parent_id?: string | null
+          sort_order?: number
+          stat?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_catalog_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "skill_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      skill_nodes: {
+        Row: {
+          id: string
+          level: number
+          skill_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          level?: number
+          skill_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          level?: number
+          skill_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_nodes_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stats: {
         Row: {
@@ -238,18 +326,36 @@ export type Database = {
         Args: { p_duration: number; p_subtype: string; p_type: string }
         Returns: number
       }
-      log_activity: {
-        Args: {
-          p_duration: number
-          p_note?: string
-          p_subtype: string
-          p_type: string
-        }
-        Returns: Json
+      get_stat_xp_multiplier: {
+        Args: { p_type: string; p_user: string }
+        Returns: number
       }
+      get_streak_skill_bonus: { Args: { p_user: string }; Returns: number }
+      log_activity:
+        | {
+            Args: {
+              p_duration: number
+              p_note?: string
+              p_subtype: string
+              p_type: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_difficulty?: string
+              p_duration: number
+              p_note?: string
+              p_subtype: string
+              p_type: string
+            }
+            Returns: Json
+          }
       reset_daily_quests: { Args: { p_user: string }; Returns: undefined }
+      upgrade_skill: { Args: { p_skill_id: string }; Returns: Json }
     }
     Enums: {
+      activity_difficulty: "easy" | "medium" | "hard"
       stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
     }
     CompositeTypes: {
@@ -378,6 +484,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      activity_difficulty: ["easy", "medium", "hard"],
       stat_kind: ["intelligence", "strength", "discipline", "charisma"],
     },
   },
