@@ -181,9 +181,6 @@ function tomorrowIso() {
 }
 
 function questTool(count: number, dailySlots: boolean) {
-  const required = ["title", "description", "difficulty", "energy", "linked_stats", "type_id", "target", "unit", "theme", "reason"];
-  if (dailySlots) required.unshift("slot");
-
   return [{
     type: "function",
     function: {
@@ -194,8 +191,6 @@ function questTool(count: number, dailySlots: boolean) {
         properties: {
           quests: {
             type: "array",
-            minItems: count,
-            maxItems: count,
             items: {
               type: "object",
               properties: {
@@ -215,13 +210,10 @@ function questTool(count: number, dailySlots: boolean) {
                 theme: { type: "string", enum: ["focus", "discipline", "health", "learning", "social"] },
                 reason: { type: "string" },
               },
-              required,
-              additionalProperties: false,
             },
           },
         },
         required: ["quests"],
-        additionalProperties: false,
       },
     },
   }];
