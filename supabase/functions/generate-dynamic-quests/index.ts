@@ -439,6 +439,7 @@ serve(async (req) => {
       });
 
       const valid = validateGenerated({ quests: batch, mode, slots, allowedTypeIds, memory: [...memory, ...rejected], accepted });
+      console.log("quest generation attempt", JSON.stringify({ mode, attempt, requested: slots, received: batch.length, valid: valid.length, titles: batch.map((q) => q.title) }));
       for (const q of valid) {
         if (accepted.length >= needed) break;
         if (mode !== "dynamic-options" && accepted.some((existing) => existing.slot === q.slot)) continue;
