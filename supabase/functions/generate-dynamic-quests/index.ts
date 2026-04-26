@@ -362,6 +362,19 @@ function validateGenerated(args: {
   return results;
 }
 
+function coerceTypeId(q: GeneratedQuest, allowedTypeIds: string[]) {
+  const raw = String(q.type_id ?? "");
+  if (allowedTypeIds.includes(raw)) return raw;
+  const byTheme: Record<string, string[]> = {
+    focus: ["study"],
+    discipline: ["study", "meditation"],
+    health: ["workout", "cardio", "meditation"],
+    learning: ["study"],
+    social: ["socializing", "public_speaking"],
+  };
+  return byTheme[String(q.theme)]?.find((id) => allowedTypeIds.includes(id)) ?? allowedTypeIds[0] ?? raw;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
