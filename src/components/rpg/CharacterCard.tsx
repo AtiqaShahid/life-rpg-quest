@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { XpBar } from "./XpBar";
 import { StatBadge } from "./StatBadge";
 import { Profile, Stats, Streak } from "@/hooks/usePlayer";
-import { Flame } from "lucide-react";
+import { Flame, Sparkles } from "lucide-react";
 import { xpToNext } from "@/lib/rpg";
 
 type Props = {
@@ -76,6 +76,16 @@ export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }:
                 <span className="font-semibold text-accent">{streak.current_streak}</span>
                 <span>day streak</span>
               </span>
+              {profile.skill_points > 0 && (
+                <>
+                  <span className="opacity-40">•</span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="font-semibold text-primary">{profile.skill_points}</span>
+                    <span>SP</span>
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
