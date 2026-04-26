@@ -331,6 +331,43 @@ export function usePlayer() {
     setQuests(prev => [data as Quest, ...prev]);
   }, [user]);
 
+  /**
+   * Create a custom quest after the user picks a category (daily/weekly/epic).
+   * Server enforces: non-empty title, no duplicates within the same category,
+   * weekly cap of 3, epic cap of 1, and assigns difficulty/XP defaults.
+   */
+  const addCustomQuest = useCallback(async (
+    title: string,
+    quest_type: "daily" | "weekly" | "epic",
+    difficulty = 3,
+  ): Promise<{ ok: boolean; reason?: string }> => {
+    if (!user) return { ok: false, reason: "not_authenticated" };
+    const clean = title.trim();
+    if (!clean) { toast.error("Quest title can't be empty."); return { ok: false, reason: "empty_title" }; }
+    const { data, error } = await supabase.rpc("add_custom_quest", {
+      p_title: clean,
+      p_quest_type: quest_type,
+      p_difficulty: difficulty,
+      p_description: null,
+    });
+    if (error) { toast.error(error.message); return { ok: false, reason: error.message }; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok) {
+      const msg =
+        r.reason === "duplicate_title" ? "A quest with that title already exists in this category." :
+        r.reason === "weekly_full"     ? "Weekly is full — max 3 active missions." :
+        r.reason === "epic_full"       ? "You already have an active epic quest." :
+        r.reason === "empty_title"     ? "Quest title can't be empty." :
+        r.reason === "invalid_category"? "Pick Daily, Weekly, or Epic." :
+        r.reason ?? "Could not create quest.";
+      toast.error(msg);
+      return { ok: false, reason: r.reason };
+    }
+    toast.success(`Added to ${quest_type}.`);
+    await refresh();
+    return { ok: true };
+  }, [user, refresh]);
+
   const removeQuest = useCallback(async (id: string) => {
     if (!user) return;
     const { error } = await supabase.from("quests").delete().eq("id", id);
@@ -453,7 +490,7 @@ export function usePlayer() {
     skillCatalog, skillNodes,
     questProgress,
     xpNeeded, xpFlash, levelUpFlash,
-    refresh, logActivity, completeQuest, addQuest, removeQuest, updateProfile, awardXp,
+    refresh, logActivity, completeQuest, addQuest, addCustomQuest, removeQuest, updateProfile, awardXp,
     upgradeSkill, generateQuests, generateDynamicQuests,
     regenerateDailySlot, regenerateAllDailySlots,
     lockQuest, unlockQuest,
