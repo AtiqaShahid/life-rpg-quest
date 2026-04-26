@@ -405,6 +405,21 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _discard_daily_dynamic_slot: {
+        Args: { p_slot: number; p_user: string }
+        Returns: undefined
+      }
+      _has_active_selection: {
+        Args: {
+          p_type: Database["public"]["Enums"]["quest_type"]
+          p_user: string
+        }
+        Returns: boolean
+      }
+      _pick_daily_template: {
+        Args: { p_recovery: boolean; p_user: string }
+        Returns: Record<string, unknown>
+      }
       complete_quest: { Args: { p_quest_id: string }; Returns: Json }
       compute_activity_xp: {
         Args: { p_duration: number; p_subtype: string; p_type: string }
@@ -418,7 +433,9 @@ export type Database = {
         }
         Returns: Json
       }
+      generate_epic_options: { Args: never; Returns: Json }
       generate_quests: { Args: { p_force?: boolean }; Returns: Json }
+      generate_weekly_options: { Args: never; Returns: Json }
       get_behavior_profile: { Args: never; Returns: Json }
       get_stat_xp_multiplier: {
         Args: { p_type: string; p_user: string }
@@ -439,6 +456,7 @@ export type Database = {
         }
         Returns: Json
       }
+      lock_quest: { Args: { p_quest_id: string }; Returns: Json }
       log_activity:
         | {
             Args: {
@@ -459,7 +477,12 @@ export type Database = {
             }
             Returns: Json
           }
+      regenerate_daily_slot: { Args: { p_slot: number }; Returns: Json }
+      regenerate_daily_slots_all: { Args: never; Returns: Json }
       reset_daily_quests: { Args: { p_user: string }; Returns: undefined }
+      seed_compulsory_quests: { Args: never; Returns: Json }
+      select_quest_option: { Args: { p_quest_id: string }; Returns: Json }
+      unlock_quest: { Args: { p_quest_id: string }; Returns: Json }
       upgrade_skill: { Args: { p_skill_id: string }; Returns: Json }
     }
     Enums: {
