@@ -157,14 +157,68 @@ export type Database = {
         }
         Relationships: []
       }
+      quest_progress: {
+        Row: {
+          created_at: string
+          current: number
+          id: string
+          last_event_at: string | null
+          quest_id: string
+          target: number
+          unit: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current?: number
+          id?: string
+          last_event_at?: string | null
+          quest_id: string
+          target?: number
+          unit?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current?: number
+          id?: string
+          last_event_at?: string | null
+          quest_id?: string
+          target?: number
+          unit?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quest_progress_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: true
+            referencedRelation: "quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       quests: {
         Row: {
           completed: boolean
           completed_at: string | null
           created_at: string
+          criteria: Json
+          description: string | null
+          difficulty: number
+          energy: Database["public"]["Enums"]["quest_energy"]
+          expires_at: string | null
+          generation_reason: string | null
           id: string
           is_daily: boolean
+          linked_stats: string[]
+          quest_type: Database["public"]["Enums"]["quest_type"]
           reward_xp: number
+          status: Database["public"]["Enums"]["quest_status"]
+          template_key: string | null
           title: string
           user_id: string
         }
@@ -172,9 +226,19 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          criteria?: Json
+          description?: string | null
+          difficulty?: number
+          energy?: Database["public"]["Enums"]["quest_energy"]
+          expires_at?: string | null
+          generation_reason?: string | null
           id?: string
           is_daily?: boolean
+          linked_stats?: string[]
+          quest_type?: Database["public"]["Enums"]["quest_type"]
           reward_xp?: number
+          status?: Database["public"]["Enums"]["quest_status"]
+          template_key?: string | null
           title: string
           user_id: string
         }
@@ -182,9 +246,19 @@ export type Database = {
           completed?: boolean
           completed_at?: string | null
           created_at?: string
+          criteria?: Json
+          description?: string | null
+          difficulty?: number
+          energy?: Database["public"]["Enums"]["quest_energy"]
+          expires_at?: string | null
+          generation_reason?: string | null
           id?: string
           is_daily?: boolean
+          linked_stats?: string[]
+          quest_type?: Database["public"]["Enums"]["quest_type"]
           reward_xp?: number
+          status?: Database["public"]["Enums"]["quest_status"]
+          template_key?: string | null
           title?: string
           user_id?: string
         }
@@ -322,16 +396,40 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_quest: { Args: { p_quest_id: string }; Returns: Json }
       compute_activity_xp: {
         Args: { p_duration: number; p_subtype: string; p_type: string }
         Returns: number
       }
+      compute_quest_xp: {
+        Args: {
+          p_difficulty: number
+          p_type: Database["public"]["Enums"]["quest_type"]
+          p_user: string
+        }
+        Returns: Json
+      }
+      generate_quests: { Args: { p_force?: boolean }; Returns: Json }
       get_behavior_profile: { Args: never; Returns: Json }
       get_stat_xp_multiplier: {
         Args: { p_type: string; p_user: string }
         Returns: number
       }
       get_streak_skill_bonus: { Args: { p_user: string }; Returns: number }
+      insert_dynamic_quest: {
+        Args: {
+          p_criteria: Json
+          p_description: string
+          p_difficulty: number
+          p_energy: Database["public"]["Enums"]["quest_energy"]
+          p_linked_stats: string[]
+          p_reason: string
+          p_target: number
+          p_title: string
+          p_unit: string
+        }
+        Returns: Json
+      }
       log_activity:
         | {
             Args: {
@@ -357,6 +455,9 @@ export type Database = {
     }
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
+      quest_energy: "low" | "medium" | "high"
+      quest_status: "active" | "completed" | "failed" | "paused"
+      quest_type: "daily" | "weekly" | "epic" | "dynamic"
       stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
     }
     CompositeTypes: {
@@ -486,6 +587,9 @@ export const Constants = {
   public: {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
+      quest_energy: ["low", "medium", "high"],
+      quest_status: ["active", "completed", "failed", "paused"],
+      quest_type: ["daily", "weekly", "epic", "dynamic"],
       stat_kind: ["intelligence", "strength", "discipline", "charisma"],
     },
   },
