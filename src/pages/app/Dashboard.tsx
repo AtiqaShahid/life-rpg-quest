@@ -5,6 +5,7 @@ import { ActivityPicker } from "@/components/rpg/ActivityPicker";
 import { QuestCard } from "@/components/rpg/QuestCard";
 import { ActivityFeed } from "@/components/rpg/ActivityFeed";
 import { LogActivityDialog } from "@/components/rpg/LogActivityDialog";
+import { BehaviorInsightsPanel } from "@/components/rpg/BehaviorInsightsPanel";
 import { Loader2, Scroll, Zap, Activity as ActivityIcon } from "lucide-react";
 
 const SectionTitle = ({ icon: Icon, title, hint }: { icon: React.ComponentType<{ className?: string }>; title: string; hint?: string }) => (
@@ -26,10 +27,14 @@ export default function Dashboard() {
 
   const dailyQuests = p.quests.filter(q => q.is_daily);
   const completedToday = dailyQuests.filter(q => q.completed).length;
+  // Re-evaluate behavior whenever XP flashes (i.e. a new activity was logged).
+  const behaviorKey = p.xpFlash?.key ?? "init";
 
   return (
     <div className="space-y-6 sm:space-y-8">
       <CharacterCard profile={p.profile} stats={p.stats} streak={p.streak} xpFlash={p.xpFlash} levelUpFlash={p.levelUpFlash} />
+
+      <BehaviorInsightsPanel refreshKey={behaviorKey} />
 
       <section>
         <SectionTitle icon={Zap} title="Quick log" hint="PICK • DURATION • XP" />
