@@ -326,6 +326,7 @@ export type Database = {
         Args: { p_duration: number; p_subtype: string; p_type: string }
         Returns: number
       }
+      get_behavior_profile: { Args: never; Returns: Json }
       get_stat_xp_multiplier: {
         Args: { p_type: string; p_user: string }
         Returns: number
