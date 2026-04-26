@@ -319,7 +319,10 @@ function validateGenerated(args: {
     const description = String(q.description ?? "").trim();
     const titleKey = normalizeText(title);
     const typeId = String(q.type_id ?? "");
-    const slot = Number(q.slot);
+    let slot = Number(q.slot);
+    if (args.mode !== "dynamic-options" && !expectedSlots.has(slot)) {
+      slot = args.slots.find((candidateSlot) => !takenSlots.has(candidateSlot)) ?? slot;
+    }
 
     if (!title || !description || !args.allowedTypeIds.includes(typeId)) continue;
     if (seenTitles.has(titleKey)) continue;
