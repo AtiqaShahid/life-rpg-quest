@@ -81,12 +81,12 @@ export default function Quests() {
     </div>
   );
 
-  const SlotCard = ({ slot }: { slot: number }) => {
+  const renderSlot = (slot: number) => {
     const q = buckets.dailySlots[slot - 1];
     const isBusy = busy === `slot-${slot}`;
     if (!q) {
       return (
-        <div className="glass flex items-center justify-between gap-3 rounded-2xl p-4">
+        <div key={`slot-empty-${slot}`} className="glass flex items-center justify-between gap-3 rounded-2xl p-4">
           <div>
             <div className="font-mono text-[10px] tracking-widest text-muted-foreground">SLOT {slot}</div>
             <div className="mt-1 text-sm text-muted-foreground">Empty — generate a dynamic quest.</div>
@@ -99,7 +99,7 @@ export default function Quests() {
       );
     }
     return (
-      <div className="space-y-1">
+      <div key={q.id} className="space-y-1">
         <div className="flex items-center justify-between px-1 font-mono text-[10px] tracking-widest text-muted-foreground">
           <span>SLOT {slot}{slot === 1 ? " · easy" : slot === 2 ? " · medium" : " · hard"}</span>
           {isBusy && <Loader2 className="h-3 w-3 animate-spin" />}
@@ -218,7 +218,7 @@ export default function Quests() {
               <span className="text-[10px] text-muted-foreground">Lock to keep · regenerate individually</span>
             </div>
             <div className="space-y-3">
-              {[1,2,3].map(s => <SlotCard key={s} slot={s} />)}
+              {[1,2,3].map(s => renderSlot(s))}
             </div>
           </section>
           {buckets.dailyCustom.length > 0 && (
