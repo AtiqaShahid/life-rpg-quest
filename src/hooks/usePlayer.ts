@@ -23,7 +23,7 @@ function buildQuestRow(
   pick: PoolQuest,
   opts: { questType: "daily" | "dynamic"; status: "active" | "candidate"; slotIndex: number | null },
 ) {
-  const criteria: Record<string, unknown> = { type_id: pick.type_id };
+  const criteria: Record<string, string | number> = { type_id: pick.type_id };
   if (pick.min_duration && pick.min_duration > 0) criteria.min_duration = pick.min_duration;
   return {
     user_id: userId,
@@ -33,7 +33,7 @@ function buildQuestRow(
     difficulty: pick.difficulty,
     linked_stats: pick.linked_stats,
     energy: pick.energy,
-    criteria,
+    criteria: criteria as unknown as Record<string, never>,
     status: opts.status,
     reward_xp: rewardForDifficulty(pick.difficulty),
     is_daily: opts.questType === "daily",
