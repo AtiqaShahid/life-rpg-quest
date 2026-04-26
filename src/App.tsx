@@ -14,6 +14,7 @@ import Activities from "./pages/app/Activities";
 import Quests from "./pages/app/Quests";
 import StatsPage from "./pages/app/Stats";
 import Achievements from "./pages/app/Achievements";
+import SkillTree from "./pages/app/SkillTree";
 import Settings from "./pages/app/Settings";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +43,7 @@ const App = () => (
               <Route path="activities" element={<Activities />} />
               <Route path="quests" element={<Quests />} />
               <Route path="stats" element={<StatsPage />} />
+              <Route path="skills" element={<SkillTree />} />
               <Route path="achievements" element={<Achievements />} />
               <Route path="settings" element={<Settings />} />
             </Route>
