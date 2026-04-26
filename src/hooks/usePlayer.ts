@@ -400,7 +400,9 @@ export function usePlayer() {
   /** Generate AI dynamic quests via the edge function. */
   const generateDynamicQuests = useCallback(async () => {
     if (!user) return { ok: false };
-    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests");
+    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests", {
+      body: { mode: "dynamic-options" },
+    });
     if (error) {
       toast.error("Could not generate AI quests right now.");
       return { ok: false };
@@ -408,6 +410,7 @@ export function usePlayer() {
     const r = data as { ok?: boolean; generated?: number; error?: string };
     if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
     else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
+    else if (r.error === "not_unique_enough") toast.info("AI could not create enough unique quests. Try again in a moment.");
     else if (r.generated && r.generated > 0) toast.success(`+${r.generated} AI quest${r.generated > 1 ? "s" : ""}`);
     else toast.info("No AI quests generated.");
     await refresh();
@@ -417,10 +420,14 @@ export function usePlayer() {
   /** Regenerate a single dynamic daily slot (1, 2, or 3). */
   const regenerateDailySlot = useCallback(async (slot: number) => {
     if (!user) return { ok: false };
-    const { data, error } = await supabase.rpc("regenerate_daily_slot", { p_slot: slot });
-    if (error) { toast.error(error.message); return { ok: false }; }
-    const r = data as { ok: boolean; reason?: string };
-    if (!r.ok) toast.info(r.reason === "slot_locked" ? "That slot is locked." : "Could not regenerate this slot.");
+    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests", {
+      body: { mode: "daily-slot", slot },
+    });
+    if (error) { toast.error("Could not regenerate this slot right now."); return { ok: false }; }
+    const r = data as { ok?: boolean; reason?: string; error?: string; generated?: number };
+    if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
+    else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
+    else if (!r.ok) toast.info(r.reason === "all_slots_locked" ? "That slot is locked." : "Could not create a unique replacement.");
     await refresh();
     return r;
   }, [user, refresh]);
@@ -428,11 +435,17 @@ export function usePlayer() {
   /** Regenerate all 3 dynamic daily slots (skipping locked). */
   const regenerateAllDailySlots = useCallback(async () => {
     if (!user) return { ok: false };
-    const { error } = await supabase.rpc("regenerate_daily_slots_all");
-    if (error) { toast.error(error.message); return { ok: false }; }
-    toast.success("Daily slots refreshed");
+    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests", {
+      body: { mode: "daily-all" },
+    });
+    if (error) { toast.error("Could not regenerate daily slots right now."); return { ok: false }; }
+    const r = data as { ok?: boolean; generated?: number; error?: string };
+    if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
+    else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
+    else if (r.ok && (r.generated ?? 0) > 0) toast.success("Daily slots refreshed");
+    else toast.info("Could not create unique replacements.");
     await refresh();
-    return { ok: true };
+    return { ok: !!r.ok };
   }, [user, refresh]);
 
   const lockQuest = useCallback(async (questId: string) => {
