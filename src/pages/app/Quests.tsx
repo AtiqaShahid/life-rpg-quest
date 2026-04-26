@@ -27,6 +27,7 @@ export default function Quests() {
     return {
       dailyCompulsory: dailyAll.filter(q => q.is_compulsory).sort((a,b) => a.title.localeCompare(b.title)),
       dailySlots: [1,2,3].map(slot => dailyAll.find(q => !q.is_compulsory && q.slot_index === slot) ?? null),
+      dailyCustom: dailyAll.filter(q => !q.is_compulsory && q.slot_index === null && q.generation_reason === "custom_user"),
       weeklyActive: all.filter(q => q.quest_type === "weekly" && (q.status === "active" || q.status === "locked") && visible(q)),
       weeklyCandidates: all.filter(q => q.quest_type === "weekly" && q.status === "candidate"),
       epicActive: all.filter(q => q.quest_type === "epic" && (q.status === "active" || q.status === "locked") && visible(q)),
@@ -205,7 +206,7 @@ export default function Quests() {
         <TabsContent value="daily" className="mt-4 space-y-6">
           <section>
             <div className="mb-2 flex items-center gap-2 font-mono text-[11px] tracking-widest text-emerald-300">
-              <Anchor className="h-3.5 w-3.5" /> COMPULSORY ANCHORS · 4 fixed
+              <Anchor className="h-3.5 w-3.5" /> COMPULSORY ANCHORS · 3 fixed
             </div>
             {renderList(buckets.dailyCompulsory, "Anchors will appear shortly…")}
           </section>
@@ -220,6 +221,12 @@ export default function Quests() {
               {[1,2,3].map(s => <SlotCard key={s} slot={s} />)}
             </div>
           </section>
+          {buckets.dailyCustom.length > 0 && (
+            <section>
+              <div className="mb-2 font-mono text-[11px] tracking-widest text-muted-foreground">YOUR CUSTOM DAILIES</div>
+              {renderList(buckets.dailyCustom)}
+            </section>
+          )}
         </TabsContent>
 
         <TabsContent value="weekly" className="mt-4 space-y-4">
