@@ -11,8 +11,6 @@ export default function Quests() {
   const [xp, setXp] = useState(25);
   const [busy, setBusy] = useState<"none" | "refresh" | "ai">("none");
 
-  if (p.loading) return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div>;
-
   const all = p.quests as unknown as QuestRich[];
   const progressByQuest = useMemo(() => {
     const m = new Map<string, typeof p.questProgress[number]>();
@@ -27,6 +25,8 @@ export default function Quests() {
     dynamic: all.filter(q => q.quest_type === "dynamic" && q.status !== "completed"),
     completed: all.filter(q => q.status === "completed" || q.completed),
   }), [all]);
+
+  if (p.loading) return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div>;
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
