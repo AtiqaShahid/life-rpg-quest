@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ActivityType, usePlayer } from "@/hooks/usePlayer";
 import { ACTIVITY_CATALOG, DurationOption, Subtype } from "@/lib/activityCatalog";
 import * as Lucide from "lucide-react";
 import { statMeta } from "@/lib/rpg";
 import { cn } from "@/lib/utils";
-import { Loader2 } from "lucide-react";
+import { Loader2, X, ChevronLeft } from "lucide-react";
 import { calculateXp, projectStreakDays, type Difficulty } from "@/lib/progression";
 
 type Props = {
@@ -80,28 +81,46 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className="glass-strong flex max-h-[90vh] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-border/50 p-0 sm:rounded-3xl"
-      >
-        <DialogHeader className="shrink-0 border-b border-border/50 p-6 pb-4">
-          <div className="flex items-center gap-3">
+      <DialogPortal>
+        <DialogOverlay className="z-[80]" />
+        <DialogPrimitive.Content
+          className={cn(
+            "glass-strong fixed left-1/2 top-2 z-[90] flex w-[calc(100vw-1rem)] max-w-lg -translate-x-1/2",
+            "flex-col overflow-hidden border border-border/50 shadow-elegant outline-none",
+            "max-h-[calc(100dvh-1rem)] sm:top-1/2 sm:max-h-[90vh] sm:-translate-y-1/2 sm:rounded-3xl",
+            "duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+          )}
+        >
+          {/* Sticky header with Back / Close */}
+          <div className="relative flex shrink-0 items-center gap-3 border-b border-border/50 bg-background/80 p-4 backdrop-blur-xl sm:p-5">
+            <DialogPrimitive.Close
+              aria-label="Back"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </DialogPrimitive.Close>
             <div
-              className="flex h-11 w-11 items-center justify-center rounded-xl ring-1"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1"
               style={{ background: `hsl(${meta.colorVar} / 0.15)`, color: `hsl(${meta.colorVar})` }}
             >
               <Icon className="h-5 w-5" />
             </div>
-            <div>
-              <DialogTitle className="font-display text-xl">Log {type.label}</DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
-                Pick type, duration & difficulty. XP scales with your multipliers.
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="truncate font-display text-base sm:text-lg">Log {type.label}</DialogTitle>
+              <DialogDescription className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                Pick type, duration & difficulty
               </DialogDescription>
             </div>
+            <DialogPrimitive.Close
+              aria-label="Close"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+            >
+              <X className="h-4 w-4" />
+            </DialogPrimitive.Close>
           </div>
-        </DialogHeader>
 
-        {/* Scrollable body */}
-        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 scrollbar-thin">
+          {/* Scrollable body */}
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-4 scrollbar-thin sm:px-6 sm:py-5">
           {/* Subtype */}
           <div>
             <label className="font-mono text-[11px] tracking-widest text-muted-foreground">TYPE</label>
@@ -208,26 +227,37 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
               className="mt-1.5 w-full rounded-xl bg-muted/40 px-4 py-2.5 text-sm outline-none ring-1 ring-border transition-all focus:ring-primary"
             />
           </div>
-        </div>
+          </div>
 
-        {/* Fixed action bar — always visible */}
-        <div className="sticky bottom-0 z-10 shrink-0 border-t border-border/50 bg-background/95 p-4 backdrop-blur-xl">
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={!canSubmit}
-            className={cn(
-              "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-sm font-semibold transition-all",
-              canSubmit
-                ? "bg-gradient-primary text-primary-foreground shadow-elegant hover:opacity-95"
-                : "cursor-not-allowed bg-muted/40 text-muted-foreground",
-            )}
+          {/* Fixed action bar — always visible */}
+          <div
+            className="shrink-0 border-t border-border/50 bg-background p-3 sm:p-4"
+            style={{ paddingBottom: "max(env(safe-area-inset-bottom), 0.75rem)" }}
           >
-            {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {preview ? `Earn +${preview.final} XP` : "Pick a duration"}
-          </button>
-        </div>
-      </DialogContent>
+            <div className="flex gap-2">
+              <DialogPrimitive.Close
+                className="flex items-center justify-center rounded-xl border border-border bg-muted/40 px-4 py-3 font-display text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+              >
+                Cancel
+              </DialogPrimitive.Close>
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                className={cn(
+                  "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-sm font-semibold transition-all",
+                  canSubmit
+                    ? "bg-gradient-primary text-primary-foreground shadow-glow-primary hover:opacity-95"
+                    : "cursor-not-allowed bg-muted/40 text-muted-foreground",
+                )}
+              >
+                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
+                {preview ? `Earn +${preview.final} XP` : "Pick a duration"}
+              </button>
+            </div>
+          </div>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 };
