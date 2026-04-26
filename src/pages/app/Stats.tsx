@@ -1,6 +1,7 @@
 import { usePlayer } from "@/hooks/usePlayer";
 import { StatBadge } from "@/components/rpg/StatBadge";
 import { XpBar } from "@/components/rpg/XpBar";
+import { XpCurveChart } from "@/components/rpg/XpCurveChart";
 import { Loader2, BarChart3, Flame } from "lucide-react";
 import { statMeta, xpToNext, type StatKey } from "@/lib/rpg";
 
@@ -45,6 +46,8 @@ export default function StatsPage() {
           <StatBadge stat="charisma" value={p.stats.charisma} />
         </div>
       </section>
+
+      <XpCurveChart currentLevel={p.profile.level} />
 
       <section className="glass-strong rounded-3xl p-6">
         <div className="flex items-center gap-3">
