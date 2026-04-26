@@ -3,8 +3,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, xpToNext } from "@/lib/rpg";
 import { toast } from "sonner";
+import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
 
-export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number };
+export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number; skill_points: number };
 export type Stats = { user_id: string; intelligence: number; strength: number; discipline: number; charisma: number };
 export type Streak = { user_id: string; current_streak: number; longest_streak: number; last_active_date: string | null };
 export type ActivityType = { id: string; label: string; icon: string; stat: StatKey; xp: number; description: string | null };
@@ -16,6 +17,9 @@ export type Activity = {
   duration_minutes: number | null;
   activity_date: string;
   xp_gained: number;
+  base_xp: number | null;
+  difficulty: Difficulty;
+  multiplier_breakdown: Record<string, number> | null;
   note: string | null;
   created_at: string;
 };
@@ -31,13 +35,15 @@ export function usePlayer() {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [quests, setQuests] = useState<Quest[]>([]);
   const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [skillCatalog, setSkillCatalog] = useState<SkillCatalog[]>([]);
+  const [skillNodes, setSkillNodes] = useState<SkillNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [xpFlash, setXpFlash] = useState<{ amount: number; key: number } | null>(null);
   const [levelUpFlash, setLevelUpFlash] = useState<{ to: number; key: number } | null>(null);
 
   const refresh = useCallback(async () => {
     if (!user) return;
-    const [p, s, sk, at, ac, q, ach] = await Promise.all([
+    const [p, s, sk, at, ac, q, ach, sc, sn] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("stats").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("streaks").select("*").eq("user_id", user.id).maybeSingle(),
@@ -45,14 +51,18 @@ export function usePlayer() {
       supabase.from("activities").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(50),
       supabase.from("quests").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
       supabase.from("achievements").select("*").eq("user_id", user.id).order("unlocked_at", { ascending: false }),
+      supabase.from("skill_catalog").select("*").order("sort_order", { ascending: true }),
+      supabase.from("skill_nodes").select("skill_id, level").eq("user_id", user.id),
     ]);
     setProfile(p.data as Profile | null);
     setStats(s.data as Stats | null);
     setStreak(sk.data as Streak | null);
     setActivityTypes((at.data ?? []) as ActivityType[]);
-    setActivities((ac.data ?? []) as Activity[]);
+    setActivities((ac.data ?? []) as unknown as Activity[]);
     setQuests((q.data ?? []) as Quest[]);
     setAchievements((ach.data ?? []) as Achievement[]);
+    setSkillCatalog(((sc.data ?? []) as unknown as SkillCatalog[]));
+    setSkillNodes(((sn.data ?? []) as unknown as SkillNode[]));
     setLoading(false);
   }, [user]);
 
@@ -135,6 +145,7 @@ export function usePlayer() {
     typeId: string,
     subtype: string,
     duration: number,
+    difficulty: Difficulty = "medium",
     note?: string,
   ): Promise<{ ok: boolean; reason?: string }> => {
     if (!user) return { ok: false, reason: "not_authenticated" };
@@ -146,13 +157,24 @@ export function usePlayer() {
       p_subtype: subtype,
       p_duration: duration,
       p_note: note ?? null,
+      p_difficulty: difficulty,
     });
     if (error) {
       toast.error(error.message);
       return { ok: false, reason: error.message };
     }
 
-    const result = data as { ok: boolean; reason?: string; activity?: Activity; xp_gained?: number };
+    const result = data as {
+      ok: boolean;
+      reason?: string;
+      activity?: Activity;
+      xp_gained?: number;
+      levels_gained?: number;
+      new_level?: number;
+      new_xp?: number;
+      skill_points_awarded?: number;
+      breakdown?: Record<string, number>;
+    };
     if (!result.ok) {
       if (result.reason === "already_completed_today") {
         toast.info("Already completed today", {
@@ -167,10 +189,69 @@ export function usePlayer() {
     const inserted = result.activity as Activity;
     const xp = result.xp_gained ?? inserted.xp_gained;
     setActivities(prev => [inserted, ...prev]);
-    await awardXp(xp, t.stat);
+
+    // Server already updated profile/streak/skill_points. Apply locally for instant UI.
+    setXpFlash({ amount: xp, key: Date.now() });
+    if ((result.levels_gained ?? 0) > 0 && result.new_level) {
+      setLevelUpFlash({ to: result.new_level, key: Date.now() });
+      toast.success(`⚡ LEVEL UP! Reached level ${result.new_level}`, {
+        description: `+${result.skill_points_awarded ?? 0} skill points to spend.`,
+      });
+    }
+    if (profile && result.new_level !== undefined && result.new_xp !== undefined) {
+      setProfile({
+        ...profile,
+        level: result.new_level,
+        xp: result.new_xp,
+        skill_points: profile.skill_points + (result.skill_points_awarded ?? 0),
+      });
+    }
+    // Stat point bump (the small 1-pt bonus per activity)
+    if (stats) {
+      setStats({ ...stats, [t.stat]: stats[t.stat] + STAT_GAIN_PER_ACTIVITY });
+      await supabase.from("stats").update({
+        [t.stat]: stats[t.stat] + STAT_GAIN_PER_ACTIVITY,
+      }).eq("user_id", user.id);
+    }
+    // Refresh streak from server (RPC already updated it)
+    const { data: freshStreak } = await supabase
+      .from("streaks").select("*").eq("user_id", user.id).maybeSingle();
+    if (freshStreak) setStreak(freshStreak as Streak);
+
     toast.success(`+${xp} XP — ${t.label}`);
+    await checkAchievements({
+      level: result.new_level ?? profile?.level ?? 1,
+      totalActivities: activities.length + 1,
+      streak: freshStreak?.current_streak ?? streak?.current_streak ?? 1,
+    });
     return { ok: true };
-  }, [user, activityTypes, awardXp]);
+  }, [user, activityTypes, profile, stats, streak, activities, checkAchievements]);
+
+  const upgradeSkill = useCallback(async (skillId: string) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("upgrade_skill", { p_skill_id: skillId });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string; new_level?: number; remaining_points?: number };
+    if (!r.ok) {
+      const msg =
+        r.reason === "parent_locked" ? "Unlock the parent skill first." :
+        r.reason === "max_level" ? "This skill is already maxed." :
+        r.reason === "insufficient_points" ? "Not enough skill points." :
+        r.reason ?? "Could not upgrade.";
+      toast.error(msg);
+      return { ok: false, reason: r.reason };
+    }
+    setSkillNodes(prev => {
+      const exists = prev.find(n => n.skill_id === skillId);
+      if (exists) return prev.map(n => n.skill_id === skillId ? { ...n, level: r.new_level! } : n);
+      return [...prev, { skill_id: skillId, level: r.new_level! }];
+    });
+    if (profile && r.remaining_points !== undefined) {
+      setProfile({ ...profile, skill_points: r.remaining_points });
+    }
+    toast.success(`Skill upgraded → Lv ${r.new_level}`);
+    return { ok: true };
+  }, [user, profile]);
 
   const completeQuest = useCallback(async (questId: string) => {
     if (!user) return;
