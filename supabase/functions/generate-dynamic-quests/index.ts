@@ -113,6 +113,25 @@ serve(async (req) => {
 
     const { data: userData } = await supa.auth.getUser();
     if (!userData?.user) return json({ error: "unauthenticated" }, 401);
+    const userId = userData.user.id;
+
+    // STRICT REPLACEMENT: purge all existing non-locked dynamic quests for this user
+    // BEFORE generating new ones. Locked quests (user explicitly pinned) are preserved.
+    // Quest progress rows are removed first to satisfy FK-style cleanup (no FK exists,
+    // but we still want a clean slate so the UI doesn't show orphans).
+    {
+      const { data: stale } = await supa
+        .from("quests")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("quest_type", "dynamic")
+        .in("status", ["candidate", "active"]);
+      const staleIds = (stale ?? []).map((r: { id: string }) => r.id);
+      if (staleIds.length > 0) {
+        await supa.from("quest_progress").delete().in("quest_id", staleIds);
+        await supa.from("quests").delete().in("id", staleIds);
+      }
+    }
 
     // Load profile + activity types + recent quest titles (for variation enforcement).
     const [
