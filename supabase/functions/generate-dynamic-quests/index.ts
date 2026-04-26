@@ -428,8 +428,9 @@ serve(async (req) => {
         .from("quests")
         .select("id,title,description,quest_type,status,slot_index,created_at")
         .eq("user_id", userId)
+        .in("status", ["active", "locked", "candidate"])
         .order("created_at", { ascending: false })
-        .limit(80),
+        .limit(30),
     ]);
 
     if (profileRes.error) return json({ error: "profile_failed", detail: profileRes.error.message }, 500);
@@ -454,7 +455,9 @@ serve(async (req) => {
         rejected,
       });
 
-      const valid = validateGenerated({ quests: batch, mode, slots, allowedTypeIds, memory: [...memory, ...rejected], accepted });
+      // On the final attempt, drop similarity memory so we always return something fresh from the AI.
+      const lenientMemory = attempt >= 2 ? [] : [...memory, ...rejected];
+      const valid = validateGenerated({ quests: batch, mode, slots, allowedTypeIds, memory: lenientMemory, accepted });
       for (const q of valid) {
         if (accepted.length >= needed) break;
         if (mode !== "dynamic-options" && accepted.some((existing) => existing.slot === q.slot)) continue;
@@ -464,8 +467,28 @@ serve(async (req) => {
       for (const q of batch) rejected.push({ title: String(q.title ?? ""), description: String(q.description ?? "") });
     }
 
+    // Last-resort fallback: accept raw batch with minimal validation so the user never gets stuck.
     if (accepted.length < needed) {
-      return json({ ok: false, error: "not_unique_enough", generated: 0 }, 409);
+      const fallbackBatch = await callQuestAI({
+        apiKey: LOVABLE_API_KEY,
+        mode,
+        slots,
+        profile: profileRes.data,
+        allowedTypeIds,
+        types,
+        memory: [],
+        rejected: [],
+      });
+      const fallbackValid = validateGenerated({ quests: fallbackBatch, mode, slots, allowedTypeIds, memory: [], accepted });
+      for (const q of fallbackValid) {
+        if (accepted.length >= needed) break;
+        if (mode !== "dynamic-options" && accepted.some((existing) => existing.slot === q.slot)) continue;
+        accepted.push(q);
+      }
+    }
+
+    if (accepted.length === 0) {
+      return json({ ok: false, error: "ai_returned_nothing", generated: 0 }, 502);
     }
 
     if (mode === "dynamic-options") {
