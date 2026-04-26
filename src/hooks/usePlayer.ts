@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, xpToNext } from "@/lib/rpg";
 import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
-import { QUEST_POOL, pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
+import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
 
 function tomorrowIso() {
   const d = new Date();
