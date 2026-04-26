@@ -208,10 +208,10 @@ export function usePlayer() {
     }
     // Stat point bump (the small 1-pt bonus per activity)
     if (stats) {
-      setStats({ ...stats, [t.stat]: stats[t.stat] + STAT_GAIN_PER_ACTIVITY });
-      await supabase.from("stats").update({
-        [t.stat]: stats[t.stat] + STAT_GAIN_PER_ACTIVITY,
-      }).eq("user_id", user.id);
+      const nextStats: Stats = { ...stats, [t.stat]: stats[t.stat] + STAT_GAIN_PER_ACTIVITY };
+      setStats(nextStats);
+      const patch: Partial<Pick<Stats, StatKey>> = { [t.stat]: nextStats[t.stat] } as Partial<Pick<Stats, StatKey>>;
+      await supabase.from("stats").update(patch).eq("user_id", user.id);
     }
     // Refresh streak from server (RPC already updated it)
     const { data: freshStreak } = await supabase
