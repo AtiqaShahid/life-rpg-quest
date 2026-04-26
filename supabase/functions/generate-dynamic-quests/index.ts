@@ -292,8 +292,13 @@ async function callQuestAI(args: {
   if (!call) throw new Error("no_tool_call");
 
   try {
-    const parsed = JSON.parse(call.function.arguments) as { quests?: GeneratedQuest[] };
-    return parsed.quests ?? [];
+    const parsed = JSON.parse(call.function.arguments) as { quests?: GeneratedQuest[] | string };
+    if (Array.isArray(parsed.quests)) return parsed.quests;
+    if (typeof parsed.quests === "string") {
+      const nested = JSON.parse(parsed.quests) as { quests?: GeneratedQuest[] } | GeneratedQuest[];
+      return Array.isArray(nested) ? nested : nested.quests ?? [];
+    }
+    return [];
   } catch (_e) {
     throw new Error("bad_tool_args");
   }
@@ -439,7 +444,6 @@ serve(async (req) => {
       });
 
       const valid = validateGenerated({ quests: batch, mode, slots, allowedTypeIds, memory: [...memory, ...rejected], accepted });
-      console.log("quest generation attempt", JSON.stringify({ mode, attempt, requested: slots, received: batch.length, valid: valid.length, titles: batch.map((q) => q.title) }));
       for (const q of valid) {
         if (accepted.length >= needed) break;
         if (mode !== "dynamic-options" && accepted.some((existing) => existing.slot === q.slot)) continue;
