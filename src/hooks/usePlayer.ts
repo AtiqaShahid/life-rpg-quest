@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, xpToNext } from "@/lib/rpg";
 import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
+import { QUEST_POOL, pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
 
 export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number; skill_points: number };
 export type Stats = { user_id: string; intelligence: number; strength: number; discipline: number; charisma: number };
@@ -398,55 +399,143 @@ export function usePlayer() {
   }, [user, refresh]);
 
   /** Generate AI dynamic quests via the edge function. */
+  /** Pick 3 dynamic quest options from the static pool. No AI, no duplicates. */
   const generateDynamicQuests = useCallback(async () => {
     if (!user) return { ok: false };
-    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests", {
-      body: { mode: "dynamic-options" },
+
+    // Block titles that are already active/locked anywhere, and previous dynamic candidates we're about to discard.
+    const blocked = new Set<string>();
+    quests.forEach((q) => {
+      const qr = q as unknown as QuestRich;
+      if (qr.status === "active" || qr.status === "locked") blocked.add(qr.title.toLowerCase());
     });
-    if (error) {
-      toast.error("Could not generate AI quests right now.");
+
+    const picks = pickDynamicOptions(blocked, 3);
+    if (picks.length === 0) {
+      toast.info("No quests available in the pool right now.");
       return { ok: false };
     }
-    const r = data as { ok?: boolean; generated?: number; error?: string };
-    if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
-    else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
-    else if (r.error === "not_unique_enough") toast.info("AI could not create enough unique quests. Try again in a moment.");
-    else if (r.generated && r.generated > 0) toast.success(`+${r.generated} AI quest${r.generated > 1 ? "s" : ""}`);
-    else toast.info("No AI quests generated.");
+
+    // Discard previous dynamic candidates so we don't accumulate.
+    const prevDynamic = (quests as unknown as QuestRich[]).filter(
+      (q) => q.quest_type === "dynamic" && (q.status === "candidate" || q.status === "active"),
+    );
+    if (prevDynamic.length > 0) {
+      const ids = prevDynamic.map((q) => q.id);
+      await supabase.from("quest_progress").delete().in("quest_id", ids);
+      await supabase.from("quests").update({ status: "discarded" }).in("id", ids);
+    }
+
+    const inserts = picks.map((p) => buildQuestRow(user.id, p, { questType: "dynamic", status: "candidate", slotIndex: null }));
+    const { data: rows, error } = await supabase.from("quests").insert(inserts).select("id");
+    if (error || !rows) { toast.error("Could not generate quests right now."); return { ok: false }; }
+
+    const progressRows = rows.map((r, idx) => buildProgressRow(r.id, user.id, picks[idx]));
+    await supabase.from("quest_progress").insert(progressRows);
+
+    toast.success(`+${rows.length} new option${rows.length > 1 ? "s" : ""} from the quest bank`);
     await refresh();
-    return { ok: !!r.ok, generated: r.generated ?? 0 };
-  }, [user, refresh]);
+    return { ok: true, generated: rows.length };
+  }, [user, quests, refresh]);
 
   /** Regenerate a single dynamic daily slot (1, 2, or 3). */
+  /** Regenerate a single dynamic daily slot from the static pool. */
   const regenerateDailySlot = useCallback(async (slot: number) => {
     if (!user) return { ok: false };
-    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests", {
-      body: { mode: "daily-slot", slot },
+    if (![1, 2, 3].includes(slot)) return { ok: false, reason: "invalid_slot" };
+
+    const all = quests as unknown as QuestRich[];
+
+    // Locked slot? bail out — never replace a locked quest.
+    const lockedHere = all.find(
+      (q) => q.quest_type === "daily" && !q.is_compulsory && q.slot_index === slot && q.status === "locked",
+    );
+    if (lockedHere) {
+      toast.info("That slot is locked.");
+      return { ok: false, reason: "slot_locked" };
+    }
+
+    // Block currently-active titles so we never duplicate.
+    const blocked = new Set<string>();
+    all.forEach((q) => {
+      if (q.status === "active" || q.status === "locked") blocked.add(q.title.toLowerCase());
     });
-    if (error) { toast.error("Could not regenerate this slot right now."); return { ok: false }; }
-    const r = data as { ok?: boolean; reason?: string; error?: string; generated?: number };
-    if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
-    else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
-    else if (!r.ok) toast.info(r.reason === "all_slots_locked" ? "That slot is locked." : "Could not create a unique replacement.");
+
+    const pick = pickQuestForSlot(slot, blocked);
+    if (!pick) { toast.info("No quests available in the pool."); return { ok: false }; }
+
+    // Replace whatever was in this slot.
+    const stale = all.filter(
+      (q) => q.quest_type === "daily" && !q.is_compulsory && q.slot_index === slot
+        && (q.status === "active" || q.status === "candidate"),
+    );
+    if (stale.length > 0) {
+      const ids = stale.map((q) => q.id);
+      await supabase.from("quest_progress").delete().in("quest_id", ids);
+      await supabase.from("quests").update({ status: "discarded" }).in("id", ids);
+    }
+
+    const row = buildQuestRow(user.id, pick, { questType: "daily", status: "active", slotIndex: slot });
+    const { data: questRow, error } = await supabase.from("quests").insert(row).select("id").single();
+    if (error || !questRow) { toast.error("Could not regenerate this slot."); return { ok: false }; }
+
+    await supabase.from("quest_progress").insert(buildProgressRow(questRow.id, user.id, pick));
     await refresh();
-    return r;
-  }, [user, refresh]);
+    return { ok: true };
+  }, [user, quests, refresh]);
 
   /** Regenerate all 3 dynamic daily slots (skipping locked). */
+  /** Regenerate every unlocked daily slot from the static pool, balanced by category. */
   const regenerateAllDailySlots = useCallback(async () => {
     if (!user) return { ok: false };
-    const { data, error } = await supabase.functions.invoke("generate-dynamic-quests", {
-      body: { mode: "daily-all" },
-    });
-    if (error) { toast.error("Could not regenerate daily slots right now."); return { ok: false }; }
-    const r = data as { ok?: boolean; generated?: number; error?: string };
-    if (r.error === "rate_limited") toast.error("AI rate-limited — try again soon.");
-    else if (r.error === "credits_exhausted") toast.error("AI credits exhausted.");
-    else if (r.ok && (r.generated ?? 0) > 0) toast.success("Daily slots refreshed");
-    else toast.info("Could not create unique replacements.");
+    const all = quests as unknown as QuestRich[];
+
+    const lockedSlots = new Set(
+      all
+        .filter((q) => q.quest_type === "daily" && !q.is_compulsory && q.status === "locked" && q.slot_index)
+        .map((q) => q.slot_index as number),
+    );
+
+    const slotsToFill = [1, 2, 3].filter((s) => !lockedSlots.has(s));
+    if (slotsToFill.length === 0) { toast.info("All slots are locked."); return { ok: true }; }
+
+    // Discard old quests in those slots first.
+    const stale = all.filter(
+      (q) => q.quest_type === "daily" && !q.is_compulsory && q.slot_index !== null
+        && slotsToFill.includes(q.slot_index) && (q.status === "active" || q.status === "candidate"),
+    );
+    if (stale.length > 0) {
+      const ids = stale.map((q) => q.id);
+      await supabase.from("quest_progress").delete().in("quest_id", ids);
+      await supabase.from("quests").update({ status: "discarded" }).in("id", ids);
+    }
+
+    // Block currently-locked titles + already-picked titles in this cycle.
+    const blocked = new Set<string>();
+    all.forEach((q) => { if (q.status === "locked") blocked.add(q.title.toLowerCase()); });
+
+    const picks: { slot: number; pick: PoolQuest }[] = [];
+    for (const slot of slotsToFill) {
+      const pick = pickQuestForSlot(slot, blocked);
+      if (!pick) continue;
+      blocked.add(pick.title.toLowerCase());
+      picks.push({ slot, pick });
+    }
+    if (picks.length === 0) { toast.info("No quests available in the pool."); return { ok: false }; }
+
+    const rows = picks.map(({ slot, pick }) =>
+      buildQuestRow(user.id, pick, { questType: "daily", status: "active", slotIndex: slot }),
+    );
+    const { data: inserted, error } = await supabase.from("quests").insert(rows).select("id");
+    if (error || !inserted) { toast.error("Could not regenerate daily slots."); return { ok: false }; }
+
+    const progress = inserted.map((r, idx) => buildProgressRow(r.id, user.id, picks[idx].pick));
+    await supabase.from("quest_progress").insert(progress);
+
+    toast.success("Daily slots refreshed from the quest bank");
     await refresh();
-    return { ok: !!r.ok };
-  }, [user, refresh]);
+    return { ok: true };
+  }, [user, quests, refresh]);
 
   const lockQuest = useCallback(async (questId: string) => {
     if (!user) return;
