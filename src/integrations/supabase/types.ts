@@ -213,10 +213,13 @@ export type Database = {
           expires_at: string | null
           generation_reason: string | null
           id: string
+          is_compulsory: boolean
           is_daily: boolean
           linked_stats: string[]
           quest_type: Database["public"]["Enums"]["quest_type"]
           reward_xp: number
+          selection_group: string | null
+          slot_index: number | null
           status: Database["public"]["Enums"]["quest_status"]
           template_key: string | null
           title: string
@@ -233,10 +236,13 @@ export type Database = {
           expires_at?: string | null
           generation_reason?: string | null
           id?: string
+          is_compulsory?: boolean
           is_daily?: boolean
           linked_stats?: string[]
           quest_type?: Database["public"]["Enums"]["quest_type"]
           reward_xp?: number
+          selection_group?: string | null
+          slot_index?: number | null
           status?: Database["public"]["Enums"]["quest_status"]
           template_key?: string | null
           title: string
@@ -253,10 +259,13 @@ export type Database = {
           expires_at?: string | null
           generation_reason?: string | null
           id?: string
+          is_compulsory?: boolean
           is_daily?: boolean
           linked_stats?: string[]
           quest_type?: Database["public"]["Enums"]["quest_type"]
           reward_xp?: number
+          selection_group?: string | null
+          slot_index?: number | null
           status?: Database["public"]["Enums"]["quest_status"]
           template_key?: string | null
           title?: string
@@ -456,7 +465,14 @@ export type Database = {
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
       quest_energy: "low" | "medium" | "high"
-      quest_status: "active" | "completed" | "failed" | "paused"
+      quest_status:
+        | "active"
+        | "completed"
+        | "failed"
+        | "paused"
+        | "locked"
+        | "candidate"
+        | "discarded"
       quest_type: "daily" | "weekly" | "epic" | "dynamic"
       stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
     }
@@ -588,7 +604,15 @@ export const Constants = {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
       quest_energy: ["low", "medium", "high"],
-      quest_status: ["active", "completed", "failed", "paused"],
+      quest_status: [
+        "active",
+        "completed",
+        "failed",
+        "paused",
+        "locked",
+        "candidate",
+        "discarded",
+      ],
       quest_type: ["daily", "weekly", "epic", "dynamic"],
       stat_kind: ["intelligence", "strength", "discipline", "charisma"],
     },
