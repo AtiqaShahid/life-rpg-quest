@@ -37,7 +37,9 @@ export default function Activities() {
         open={!!openType}
         onOpenChange={(v) => { if (!v) setOpenType(null); }}
         type={openType}
-        onSubmit={(typeId, subtype, duration, note) => p.logActivity(typeId, subtype, duration, note)}
+        onSubmit={(typeId, subtype, duration, difficulty, note) =>
+          p.logActivity(typeId, subtype, duration, difficulty, note)
+        }
       />
     </div>
   );
