@@ -1,14 +1,16 @@
 import { useMemo, useState } from "react";
 import { usePlayer, type QuestRich } from "@/hooks/usePlayer";
 import { QuestCard } from "@/components/rpg/QuestCard";
-import { Loader2, Plus, Scroll, Sparkles, RefreshCw, Wand2, Anchor, Compass, Flame } from "lucide-react";
+import { Loader2, Plus, Scroll, Sparkles, RefreshCw, Wand2, Anchor, Compass, Flame, X } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 export default function Quests() {
   const p = usePlayer();
-  const [title, setTitle] = useState("");
-  const [xp, setXp] = useState(25);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [savingCategory, setSavingCategory] = useState<null | "daily" | "weekly" | "epic">(null);
   const [busy, setBusy] = useState<"none" | "refresh-all" | `slot-${number}` | "ai" | "weekly" | "epic">("none");
 
   const all = p.quests as unknown as QuestRich[];
@@ -37,11 +39,20 @@ export default function Quests() {
 
   if (p.loading) return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div>;
 
-  const submit = async (e: React.FormEvent) => {
+  const openPicker = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
-    await p.addQuest(title.trim(), xp);
-    setTitle(""); setXp(25);
+    if (!draftTitle.trim()) return;
+    setPickerOpen(true);
+  };
+
+  const saveAs = async (cat: "daily" | "weekly" | "epic") => {
+    setSavingCategory(cat);
+    const res = await p.addCustomQuest(draftTitle.trim(), cat);
+    setSavingCategory(null);
+    if (res.ok) {
+      setDraftTitle("");
+      setPickerOpen(false);
+    }
   };
 
   const refreshAllDaily = async () => { setBusy("refresh-all"); await p.regenerateAllDailySlots(); setBusy("none"); };
@@ -110,7 +121,7 @@ export default function Quests() {
         <div>
           <div className="flex items-center gap-2 font-mono text-[11px] tracking-widest text-secondary"><Scroll className="h-3.5 w-3.5" /> QUEST BOARD</div>
           <h1 className="mt-1 font-display text-3xl font-bold">Quests</h1>
-          <p className="mt-1 text-sm text-muted-foreground">4 fixed anchors + 3 dynamic slots daily. Lock the ones you want to keep, regenerate the rest.</p>
+          <p className="mt-1 text-sm text-muted-foreground">3 fixed anchors + 3 dynamic slots daily. Lock the ones you want to keep, regenerate the rest.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -134,22 +145,53 @@ export default function Quests() {
 
       <section className="glass-strong rounded-3xl p-5 sm:p-6">
         <h2 className="mb-3 font-display text-base font-semibold">Create a custom quest</h2>
-        <form onSubmit={submit} className="grid gap-3 sm:grid-cols-[1fr,auto,auto]">
+        <p className="mb-3 text-xs text-muted-foreground">Type a title, then choose where it belongs. Quests are not saved until you pick a category.</p>
+        <form onSubmit={openPicker} className="grid gap-3 sm:grid-cols-[1fr,auto]">
           <input
-            value={title} onChange={e => setTitle(e.target.value)}
+            value={draftTitle} onChange={e => setDraftTitle(e.target.value)}
             placeholder="e.g. Finish project chapter 3"
             className="w-full rounded-xl bg-muted/40 px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
           />
-          <input
-            type="number" min={5} max={500} step={5}
-            value={xp} onChange={e => setXp(Number(e.target.value) || 25)}
-            className="w-24 rounded-xl bg-muted/40 px-4 py-2.5 text-sm outline-none ring-1 ring-border focus:ring-primary"
-          />
-          <button type="submit" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-primary px-4 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-[1.02]">
-            <Plus className="h-4 w-4" /> Add
+          <button
+            type="submit"
+            disabled={!draftTitle.trim()}
+            className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-primary px-4 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-[1.02] disabled:opacity-50"
+          >
+            <Plus className="h-4 w-4" /> Choose category
           </button>
         </form>
       </section>
+
+      <Dialog open={pickerOpen} onOpenChange={(o) => { if (!savingCategory) setPickerOpen(o); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Where does this quest belong?</DialogTitle>
+            <DialogDescription>
+              "{draftTitle.trim()}" — pick a category. It will be saved with default difficulty and XP.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2 pt-2">
+            {([
+              { key: "daily",  label: "Daily",  hint: "Resets each day. Adds to your dynamic daily set." },
+              { key: "weekly", label: "Weekly", hint: "7-day mission. Max 3 active." },
+              { key: "epic",   label: "Epic",   hint: "30-day commitment. Only one at a time." },
+            ] as const).map(c => (
+              <button
+                key={c.key}
+                disabled={!!savingCategory}
+                onClick={() => saveAs(c.key)}
+                className="flex items-center justify-between rounded-xl bg-muted/40 px-4 py-3 text-left ring-1 ring-border transition-all hover:bg-muted/60 hover:ring-primary disabled:opacity-60"
+              >
+                <div>
+                  <div className="font-display text-sm font-semibold">{c.label}</div>
+                  <div className="text-xs text-muted-foreground">{c.hint}</div>
+                </div>
+                {savingCategory === c.key ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 text-primary" />}
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Tabs defaultValue="daily" className="w-full">
         <TabsList className="grid w-full grid-cols-5">
@@ -181,27 +223,47 @@ export default function Quests() {
         </TabsContent>
 
         <TabsContent value="weekly" className="mt-4 space-y-4">
-          {buckets.weeklyActive.length > 0 ? (
-            <>
-              <div className="flex items-center gap-2 font-mono text-[11px] tracking-widest text-sky-300"><Compass className="h-3.5 w-3.5" /> ACTIVE WEEKLY MISSION</div>
-              {renderList(buckets.weeklyActive)}
-            </>
-          ) : buckets.weeklyCandidates.length > 0 ? (
-            <>
-              <div className="flex items-center justify-between">
-                <div className="font-mono text-[11px] tracking-widest text-violet-300">PICK ONE WEEKLY MISSION</div>
+          {buckets.weeklyActive.length > 0 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="flex items-center gap-2 font-mono text-[11px] tracking-widest text-sky-300">
+                  <Compass className="h-3.5 w-3.5" /> ACTIVE WEEKLY · {buckets.weeklyActive.length} / 3
+                </div>
+              </div>
+              <div className="space-y-2">
+                {buckets.weeklyActive.map(q => (
+                  <QuestCard
+                    key={q.id}
+                    quest={q}
+                    progress={progressByQuest.get(q.id)}
+                    onComplete={p.completeQuest}
+                    onRemove={p.removeQuest}
+                    onLock={p.lockQuest}
+                    onUnlock={p.unlockQuest}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {buckets.weeklyCandidates.length > 0 && buckets.weeklyActive.length < 3 && (
+            <section>
+              <div className="mb-2 flex items-center justify-between">
+                <div className="font-mono text-[11px] tracking-widest text-violet-300">PICK ANY YOU LIKE · {3 - buckets.weeklyActive.length} slot{(3 - buckets.weeklyActive.length) > 1 ? "s" : ""} left</div>
                 <button onClick={genWeekly} disabled={busy !== "none"} className="text-xs text-muted-foreground hover:text-foreground">↻ Regenerate options</button>
               </div>
               <div className="space-y-2">
                 {buckets.weeklyCandidates.map(q => (
                   <QuestCard key={q.id} quest={q} progress={progressByQuest.get(q.id)} variant="candidate"
-                    onComplete={() => {}} onSelect={p.selectQuestOption} />
+                    onComplete={() => {}} onSelect={p.selectQuestOption} onRemove={p.removeQuest} />
                 ))}
               </div>
-            </>
-          ) : (
+            </section>
+          )}
+
+          {buckets.weeklyActive.length < 3 && buckets.weeklyCandidates.length === 0 && (
             <div className="glass rounded-2xl p-6 text-center text-sm text-muted-foreground">
-              No weekly mission yet.
+              {buckets.weeklyActive.length === 0 ? "No weekly missions yet." : `${3 - buckets.weeklyActive.length} weekly slot${(3 - buckets.weeklyActive.length) > 1 ? "s" : ""} open.`}
               <div className="mt-3">
                 <button onClick={genWeekly} disabled={busy !== "none"}
                   className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-primary px-3 py-2 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary disabled:opacity-60">
@@ -209,6 +271,12 @@ export default function Quests() {
                   Generate 3 options
                 </button>
               </div>
+            </div>
+          )}
+
+          {buckets.weeklyActive.length >= 3 && (
+            <div className="glass rounded-2xl p-4 text-center text-xs text-muted-foreground">
+              Weekly is full (3/3). Remove one to generate more.
             </div>
           )}
         </TabsContent>
