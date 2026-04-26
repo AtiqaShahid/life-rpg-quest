@@ -147,9 +147,7 @@ function tooSimilar(candidate: Pick<GeneratedQuest, "title" | "description">, me
     const memoryCombined = `${item.title ?? ""} ${item.description ?? ""}`;
     if (!title || !memoryTitle) return false;
     if (title === memoryTitle) return true;
-    if (title.length > 8 && memoryTitle.includes(title)) return true;
-    if (memoryTitle.length > 8 && title.includes(memoryTitle)) return true;
-    return jaccard(candidateWords, keywordSet(memoryCombined)) >= 0.58;
+    return jaccard(candidateWords, keywordSet(memoryCombined)) >= 0.85;
   });
 }
 
