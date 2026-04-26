@@ -6,6 +6,58 @@ import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
 import { QUEST_POOL, pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
 
+function tomorrowIso() {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString();
+}
+
+function rewardForDifficulty(difficulty: number) {
+  // Mirrors the server's compute_quest_xp base curve for "daily" / "dynamic" weight.
+  return Math.max(10, Math.round(15 * Math.pow(difficulty, 1.25)));
+}
+
+function buildQuestRow(
+  userId: string,
+  pick: PoolQuest,
+  opts: { questType: "daily" | "dynamic"; status: "active" | "candidate"; slotIndex: number | null },
+) {
+  const criteria: Record<string, unknown> = { type_id: pick.type_id };
+  if (pick.min_duration && pick.min_duration > 0) criteria.min_duration = pick.min_duration;
+  return {
+    user_id: userId,
+    title: pick.title,
+    description: null,
+    quest_type: opts.questType,
+    difficulty: pick.difficulty,
+    linked_stats: pick.linked_stats,
+    energy: pick.energy,
+    criteria,
+    status: opts.status,
+    reward_xp: rewardForDifficulty(pick.difficulty),
+    is_daily: opts.questType === "daily",
+    expires_at:
+      opts.questType === "daily"
+        ? tomorrowIso()
+        : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+    generation_reason: `pool:${pick.category}`,
+    template_key: opts.questType === "daily" ? `daily_pool_slot_${opts.slotIndex ?? 0}` : "dynamic_pool",
+    is_compulsory: false,
+    slot_index: opts.slotIndex,
+  };
+}
+
+function buildProgressRow(questId: string, userId: string, pick: PoolQuest) {
+  return {
+    quest_id: questId,
+    user_id: userId,
+    current: 0,
+    target: 1,
+    unit: "count" as const,
+  };
+}
+
 export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number; skill_points: number };
 export type Stats = { user_id: string; intelligence: number; strength: number; discipline: number; charisma: number };
 export type Streak = { user_id: string; current_streak: number; longest_streak: number; last_active_date: string | null };
