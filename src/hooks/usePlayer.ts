@@ -293,7 +293,9 @@ export function usePlayer() {
 
   return {
     loading, profile, stats, streak, activityTypes, activities, quests, achievements,
+    skillCatalog, skillNodes,
     xpNeeded, xpFlash, levelUpFlash,
     refresh, logActivity, completeQuest, addQuest, removeQuest, updateProfile, awardXp,
+    upgradeSkill,
   };
 }
