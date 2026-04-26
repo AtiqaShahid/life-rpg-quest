@@ -80,8 +80,10 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-strong max-w-lg border-border/50 sm:rounded-3xl">
-        <DialogHeader>
+      <DialogContent
+        className="glass-strong flex max-h-[90vh] w-[calc(100vw-1rem)] max-w-lg flex-col gap-0 overflow-hidden border-border/50 p-0 sm:rounded-3xl"
+      >
+        <DialogHeader className="shrink-0 border-b border-border/50 p-6 pb-4">
           <div className="flex items-center gap-3">
             <div
               className="flex h-11 w-11 items-center justify-center rounded-xl ring-1"
@@ -98,7 +100,8 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
           </div>
         </DialogHeader>
 
-        <div className="space-y-5 pt-2">
+        {/* Scrollable body */}
+        <div className="min-h-0 flex-1 space-y-5 overflow-y-auto px-6 py-5 scrollbar-thin">
           {/* Subtype */}
           <div>
             <label className="font-mono text-[11px] tracking-widest text-muted-foreground">TYPE</label>
@@ -205,7 +208,10 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
               className="mt-1.5 w-full rounded-xl bg-muted/40 px-4 py-2.5 text-sm outline-none ring-1 ring-border transition-all focus:ring-primary"
             />
           </div>
+        </div>
 
+        {/* Fixed action bar — always visible */}
+        <div className="sticky bottom-0 z-10 shrink-0 border-t border-border/50 bg-background/95 p-4 backdrop-blur-xl">
           <button
             type="button"
             onClick={handleSubmit}
@@ -214,7 +220,7 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
               "flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-display text-sm font-semibold transition-all",
               canSubmit
                 ? "bg-gradient-primary text-primary-foreground shadow-elegant hover:opacity-95"
-                : "cursor-not-allowed bg-muted/40 text-muted-foreground"
+                : "cursor-not-allowed bg-muted/40 text-muted-foreground",
             )}
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
