@@ -144,11 +144,11 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
             )}
           </>
         )}
-        {onRemove && !quest.is_daily && !isCompulsory && !isLocked && !isCandidate && (
+        {onRemove && !isCompulsory && !isLocked && (
           <button
             onClick={() => onRemove(quest.id)}
             aria-label="Remove quest"
-            className="opacity-0 transition-opacity group-hover:opacity-100 text-muted-foreground hover:text-destructive"
+            className="text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="h-4 w-4" />
           </button>

@@ -420,6 +420,16 @@ export type Database = {
         Args: { p_recovery: boolean; p_user: string }
         Returns: Record<string, unknown>
       }
+      add_custom_quest: {
+        Args: {
+          p_description?: string
+          p_difficulty?: number
+          p_quest_type: Database["public"]["Enums"]["quest_type"]
+          p_title: string
+        }
+        Returns: Json
+      }
+      cleanup_orphan_quests: { Args: never; Returns: Json }
       complete_quest: { Args: { p_quest_id: string }; Returns: Json }
       compute_activity_xp: {
         Args: { p_duration: number; p_subtype: string; p_type: string }
