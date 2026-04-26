@@ -27,7 +27,7 @@ export type Quest = { id: string; user_id: string; title: string; reward_xp: num
 
 export type QuestType = "daily" | "weekly" | "epic" | "dynamic";
 export type QuestEnergy = "low" | "medium" | "high";
-export type QuestStatus = "active" | "completed" | "failed" | "paused";
+export type QuestStatus = "active" | "locked" | "candidate" | "discarded" | "completed" | "failed" | "paused";
 export type QuestCriteria = { type_id?: string | string[]; min_duration?: number; min_difficulty?: string };
 
 export type QuestRich = Quest & {
@@ -41,6 +41,9 @@ export type QuestRich = Quest & {
   expires_at: string | null;
   template_key: string | null;
   generation_reason: string | null;
+  is_compulsory: boolean;
+  slot_index: number | null;
+  selection_group: string | null;
 };
 
 export type QuestProgress = {
@@ -99,8 +102,12 @@ export function usePlayer() {
   useEffect(() => {
     if (!user) { setLoading(false); return; }
     setLoading(true);
-    // Reset daily quests for today, then load.
-    supabase.rpc("reset_daily_quests", { p_user: user.id }).then(refresh);
+    // Reset daily quests for today, ensure compulsory anchors exist, then load.
+    (async () => {
+      await supabase.rpc("reset_daily_quests", { p_user: user.id });
+      await supabase.rpc("seed_compulsory_quests");
+      await refresh();
+    })();
   }, [user, refresh]);
 
   const checkAchievements = useCallback(async (ctx: { level: number; totalActivities: number; streak: number }) => {
@@ -370,6 +377,75 @@ export function usePlayer() {
     return { ok: !!r.ok, generated: r.generated ?? 0 };
   }, [user, refresh]);
 
+  /** Regenerate a single dynamic daily slot (1, 2, or 3). */
+  const regenerateDailySlot = useCallback(async (slot: number) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("regenerate_daily_slot", { p_slot: slot });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok) toast.info(r.reason === "slot_locked" ? "That slot is locked." : "Could not regenerate this slot.");
+    await refresh();
+    return r;
+  }, [user, refresh]);
+
+  /** Regenerate all 3 dynamic daily slots (skipping locked). */
+  const regenerateAllDailySlots = useCallback(async () => {
+    if (!user) return { ok: false };
+    const { error } = await supabase.rpc("regenerate_daily_slots_all");
+    if (error) { toast.error(error.message); return { ok: false }; }
+    toast.success("Daily slots refreshed");
+    await refresh();
+    return { ok: true };
+  }, [user, refresh]);
+
+  const lockQuest = useCallback(async (questId: string) => {
+    if (!user) return;
+    const { error } = await supabase.rpc("lock_quest", { p_quest_id: questId });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Quest locked");
+    await refresh();
+  }, [user, refresh]);
+
+  const unlockQuest = useCallback(async (questId: string) => {
+    if (!user) return;
+    const { error } = await supabase.rpc("unlock_quest", { p_quest_id: questId });
+    if (error) { toast.error(error.message); return; }
+    toast.success("Quest unlocked");
+    await refresh();
+  }, [user, refresh]);
+
+  const generateWeeklyOptions = useCallback(async () => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("generate_weekly_options");
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok && r.reason === "weekly_already_selected") toast.info("You already have an active weekly mission.");
+    else if (r.ok) toast.success("3 weekly options ready — pick one.");
+    await refresh();
+    return r;
+  }, [user, refresh]);
+
+  const generateEpicOptions = useCallback(async () => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("generate_epic_options");
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok && r.reason === "epic_already_selected") toast.info("You already have an active epic quest.");
+    else if (r.ok) toast.success("3 epic options ready — choose your path.");
+    await refresh();
+    return r;
+  }, [user, refresh]);
+
+  const selectQuestOption = useCallback(async (questId: string) => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc("select_quest_option", { p_quest_id: questId });
+    if (error) { toast.error(error.message); return; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok) { toast.info(r.reason ?? "Could not select"); return; }
+    toast.success("Mission locked in.");
+    await refresh();
+  }, [user, refresh]);
+
   const xpNeeded = useMemo(() => profile ? xpToNext(profile.level) : 100, [profile]);
 
   return {
@@ -379,5 +455,8 @@ export function usePlayer() {
     xpNeeded, xpFlash, levelUpFlash,
     refresh, logActivity, completeQuest, addQuest, removeQuest, updateProfile, awardXp,
     upgradeSkill, generateQuests, generateDynamicQuests,
+    regenerateDailySlot, regenerateAllDailySlots,
+    lockQuest, unlockQuest,
+    generateWeeklyOptions, generateEpicOptions, selectQuestOption,
   };
 }
