@@ -41,6 +41,44 @@ export type Database = {
         }
         Relationships: []
       }
+      active_effects: {
+        Row: {
+          created_at: string
+          effect_kind: string
+          effect_value: number
+          expires_at: string | null
+          id: string
+          item_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          effect_kind: string
+          effect_value?: number
+          expires_at?: string | null
+          id?: string
+          item_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          effect_kind?: string
+          effect_value?: number
+          expires_at?: string | null
+          id?: string
+          item_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_effects_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activities: {
         Row: {
           activity_date: string
@@ -94,6 +132,30 @@ export type Database = {
           },
         ]
       }
+      activity_repeats: {
+        Row: {
+          id: string
+          occurred_at: string
+          subtype: string
+          type_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          occurred_at?: string
+          subtype?: string
+          type_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          occurred_at?: string
+          subtype?: string
+          type_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       activity_types: {
         Row: {
           description: string | null
@@ -124,10 +186,14 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          coins: number
           created_at: string
+          fatigue: number
+          fatigue_updated_at: string
           id: string
           level: number
           skill_points: number
+          tokens: number
           updated_at: string
           user_id: string
           username: string
@@ -135,10 +201,14 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          coins?: number
           created_at?: string
+          fatigue?: number
+          fatigue_updated_at?: string
           id?: string
           level?: number
           skill_points?: number
+          tokens?: number
           updated_at?: string
           user_id: string
           username: string
@@ -146,10 +216,14 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          coins?: number
           created_at?: string
+          fatigue?: number
+          fatigue_updated_at?: string
           id?: string
           level?: number
           skill_points?: number
+          tokens?: number
           updated_at?: string
           user_id?: string
           username?: string
@@ -270,6 +344,54 @@ export type Database = {
           template_key?: string | null
           title?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      shop_items: {
+        Row: {
+          active: boolean
+          category: string
+          cooldown_min: number
+          cost: number
+          currency: string
+          description: string
+          duration_min: number | null
+          effect_kind: string
+          effect_value: number
+          icon: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          category: string
+          cooldown_min?: number
+          cost: number
+          currency: string
+          description: string
+          duration_min?: number | null
+          effect_kind: string
+          effect_value?: number
+          icon?: string
+          id: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          category?: string
+          cooldown_min?: number
+          cost?: number
+          currency?: string
+          description?: string
+          duration_min?: number | null
+          effect_kind?: string
+          effect_value?: number
+          icon?: string
+          id?: string
+          name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -400,6 +522,44 @@ export type Database = {
         }
         Relationships: []
       }
+      user_inventory: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          last_used_at: string | null
+          quantity: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          last_used_at?: string | null
+          quantity?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          last_used_at?: string | null
+          quantity?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_inventory_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "shop_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -443,10 +603,17 @@ export type Database = {
         }
         Returns: Json
       }
+      expire_active_effects: { Args: never; Returns: Json }
       generate_epic_options: { Args: never; Returns: Json }
       generate_quests: { Args: { p_force?: boolean }; Returns: Json }
       generate_weekly_options: { Args: never; Returns: Json }
+      get_active_xp_multiplier: { Args: { p_user: string }; Returns: number }
       get_behavior_profile: { Args: never; Returns: Json }
+      get_fatigue_multiplier: { Args: { p_fatigue: number }; Returns: number }
+      get_repeat_multiplier: {
+        Args: { p_subtype: string; p_type: string; p_user: string }
+        Returns: number
+      }
       get_stat_xp_multiplier: {
         Args: { p_type: string; p_user: string }
         Returns: number
@@ -487,6 +654,11 @@ export type Database = {
             }
             Returns: Json
           }
+      purchase_shop_item: {
+        Args: { p_item_id: string; p_quantity?: number }
+        Returns: Json
+      }
+      recover_fatigue: { Args: never; Returns: Json }
       regenerate_daily_slot: { Args: { p_slot: number }; Returns: Json }
       regenerate_daily_slots_all: { Args: never; Returns: Json }
       reset_daily_quests: { Args: { p_user: string }; Returns: undefined }
@@ -494,6 +666,7 @@ export type Database = {
       select_quest_option: { Args: { p_quest_id: string }; Returns: Json }
       unlock_quest: { Args: { p_quest_id: string }; Returns: Json }
       upgrade_skill: { Args: { p_skill_id: string }; Returns: Json }
+      use_inventory_item: { Args: { p_item_id: string }; Returns: Json }
     }
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
