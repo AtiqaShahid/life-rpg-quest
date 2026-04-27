@@ -1,9 +1,10 @@
 import { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles } from "lucide-react";
+import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { EarnXpBar } from "./EarnXpBar";
+import { CurrencyBadges } from "./CurrencyBadges";
 
 const NAV = [
   { to: "/app",              icon: LayoutDashboard, label: "Dashboard" },
@@ -12,6 +13,7 @@ const NAV = [
   { to: "/app/stats",        icon: BarChart3,       label: "Stats" },
   { to: "/app/skills",       icon: Sparkles,        label: "Skills" },
   { to: "/app/achievements", icon: Trophy,          label: "Achievements" },
+  { to: "/app/shop",         icon: ShoppingBag,     label: "Shop" },
   { to: "/app/settings",     icon: Settings,        label: "Settings" },
 ];
 
@@ -74,13 +76,19 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
           </div>
           <span className="font-display text-sm font-bold neon-text-primary">LIFE RPG</span>
         </div>
-        <button onClick={() => signOut()} aria-label="Sign out" className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive">
-          <LogOut className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <CurrencyBadges />
+          <button onClick={() => signOut()} aria-label="Sign out" className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive">
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
       </header>
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto px-4 pt-16 pb-44 sm:px-6 md:px-8 md:pt-6 md:pb-32">
+        <div className="mx-auto mb-4 hidden max-w-6xl justify-end md:flex">
+          <CurrencyBadges />
+        </div>
         <div className="mx-auto max-w-6xl animate-fade-in">
           {children ?? <Outlet />}
         </div>
@@ -88,7 +96,7 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-7 gap-1 px-2 py-2">
+        <div className="grid grid-cols-8 gap-1 px-2 py-2">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === "/app"} className={mobileLinkClass}>
               <Icon className="h-4 w-4" />
