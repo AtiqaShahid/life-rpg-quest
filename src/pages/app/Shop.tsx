@@ -33,10 +33,10 @@ function timeLeft(iso: string | null): string | null {
 export default function Shop() {
   const { profile, shopItems, inventory, activeEffects, purchaseItem, useItem, loading } = usePlayer();
 
-  const econ = profile as unknown as { coins: number; tokens: number; fatigue: number } | null;
+  const econ = profile as unknown as { coins: number; tokens: number; exhaustion: number } | null;
   const coins = econ?.coins ?? 0;
   const tokens = econ?.tokens ?? 0;
-  const fatigue = econ?.fatigue ?? 0;
+  const exhaustion = econ?.exhaustion ?? 0;
 
   const invByItem = useMemo(() => {
     const m = new Map<string, { quantity: number; last_used_at: string | null }>();
@@ -70,12 +70,12 @@ export default function Shop() {
           <div
             className={cn(
               "glass flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-mono",
-              fatigue >= 70 ? "text-destructive" : fatigue >= 40 ? "text-amber-400" : "text-muted-foreground",
+              exhaustion >= 70 ? "text-destructive" : exhaustion >= 40 ? "text-amber-400" : "text-muted-foreground",
             )}
-            title="Fatigue lowers your XP gain. Recover by resting or using a Burnout Reset."
+            title="Exhaustion lowers your XP gain. Recover by resting or using a Burnout Reset."
           >
             <HeartPulse className="h-4 w-4" />
-            <span className="font-semibold tabular-nums">{fatigue}/100 Fatigue</span>
+            <span className="font-semibold tabular-nums">{exhaustion}/100 Exhaustion</span>
           </div>
         </div>
       </div>
