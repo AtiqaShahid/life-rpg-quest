@@ -136,14 +136,27 @@ export type Achievement = { id: string; code: string; title: string; description
 
 export function usePlayer() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState<Profile | null>(null);
+  // Hydrate from localStorage cache for instant first paint on reload.
+  const cacheRead = <T,>(key: string): T | null => {
+    if (typeof window === "undefined" || !user) return null;
+    try {
+      const raw = window.localStorage.getItem(`${key}:${user.id}`);
+      return raw ? (JSON.parse(raw) as T) : null;
+    } catch { return null; }
+  };
+  const cacheWrite = (key: string, value: unknown) => {
+    if (typeof window === "undefined" || !user) return;
+    try { window.localStorage.setItem(`${key}:${user.id}`, JSON.stringify(value)); } catch { /* ignore */ }
+  };
+
+  const [profile, setProfile] = useState<Profile | null>(() => cacheRead<Profile>("player_profile"));
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
   const [classCatalog, setClassCatalog] = useState<ClassConfig[]>([]);
   const [statusEffects, setStatusEffects] = useState<StatusEffect[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [streak, setStreak] = useState<Streak | null>(null);
+  const [stats, setStats] = useState<Stats | null>(() => cacheRead<Stats>("player_stats"));
+  const [streak, setStreak] = useState<Streak | null>(() => cacheRead<Streak>("player_streak"));
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [quests, setQuests] = useState<Quest[]>([]);
@@ -151,6 +164,7 @@ export function usePlayer() {
   const [skillCatalog, setSkillCatalog] = useState<SkillCatalog[]>([]);
   const [skillNodes, setSkillNodes] = useState<SkillNode[]>([]);
   const [questProgress, setQuestProgress] = useState<QuestProgress[]>([]);
+  // Start as not-loading if we have cached profile — UI can render immediately.
   const [loading, setLoading] = useState(true);
   const [xpFlash, setXpFlash] = useState<{ amount: number; key: number } | null>(null);
   const [levelUpFlash, setLevelUpFlash] = useState<{ to: number; key: number } | null>(null);
@@ -174,14 +188,20 @@ export function usePlayer() {
       supabase.from("class_catalog").select("*"),
       supabase.from("user_status_effects").select("*").eq("user_id", user.id).eq("active", true).gt("expires_at", new Date().toISOString()),
     ]);
-    setProfile(p.data as Profile | null);
+    const nextProfile = p.data as Profile | null;
+    const nextStats = s.data as Stats | null;
+    const nextStreak = sk.data as Streak | null;
+    setProfile(nextProfile);
+    if (nextProfile) cacheWrite("player_profile", nextProfile);
     setShopItems(((si.data ?? []) as unknown as ShopItem[]));
     setInventory(((inv.data ?? []) as unknown as InventoryItem[]));
     setActiveEffects(((eff.data ?? []) as unknown as ActiveEffect[]));
     setClassCatalog(((cc.data ?? []) as unknown as ClassConfig[]));
     setStatusEffects(((se.data ?? []) as unknown as StatusEffect[]));
-    setStats(s.data as Stats | null);
-    setStreak(sk.data as Streak | null);
+    setStats(nextStats);
+    if (nextStats) cacheWrite("player_stats", nextStats);
+    setStreak(nextStreak);
+    if (nextStreak) cacheWrite("player_streak", nextStreak);
     setActivityTypes((at.data ?? []) as ActivityType[]);
     setActivities((ac.data ?? []) as unknown as Activity[]);
     setQuests((q.data ?? []) as unknown as Quest[]);
@@ -194,18 +214,22 @@ export function usePlayer() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    setLoading(true);
-    // Reset daily quests for today, ensure compulsory anchors exist, then load.
-    (async () => {
-      await supabase.rpc("reset_daily_quests", { p_user: user.id });
-      await supabase.rpc("seed_compulsory_quests");
-      // Housekeeping: expire old effects, slow-recover fatigue.
-      await supabase.rpc("expire_active_effects");
-      await supabase.rpc("recover_fatigue");
-      // Re-evaluate behavioral status effects (Burnout / Flow / Fatigue)
-      await supabase.rpc("evaluate_status_effects", { p_user: user.id });
-      await refresh();
-    })();
+    // If we have cached data, render instantly while we refresh in background.
+    const hasCache = !!profile;
+    if (!hasCache) setLoading(true);
+
+    // 1) Fetch real data immediately — do not wait on housekeeping RPCs.
+    refresh();
+
+    // 2) Run housekeeping in parallel; refresh once when done so quests/effects update.
+    Promise.all([
+      supabase.rpc("reset_daily_quests", { p_user: user.id }),
+      supabase.rpc("seed_compulsory_quests"),
+      supabase.rpc("expire_active_effects"),
+      supabase.rpc("recover_fatigue"),
+      supabase.rpc("evaluate_status_effects", { p_user: user.id }),
+    ]).then(() => { refresh(); }).catch(() => { /* non-fatal */ });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refresh]);
 
   const checkAchievements = useCallback(async (ctx: { level: number; totalActivities: number; streak: number }) => {

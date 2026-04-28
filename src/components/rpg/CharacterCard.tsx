@@ -23,7 +23,21 @@ export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }:
     return () => clearTimeout(t);
   }, [levelUpFlash]);
 
-  const avatarSrc = profile.avatar_url || heroAvatar;
+  // Resolve avatar with localStorage cache so it renders instantly on reload,
+  // and gracefully fall back to bundled hero asset if the remote URL fails.
+  const cacheKey = `avatar_url:${profile.user_id}`;
+  const cached = typeof window !== "undefined" ? window.localStorage.getItem(cacheKey) : null;
+  const initial = profile.avatar_url || cached || heroAvatar;
+  const [avatarSrc, setAvatarSrc] = useState<string>(initial);
+
+  useEffect(() => {
+    const next = profile.avatar_url || cached || heroAvatar;
+    setAvatarSrc(next);
+    if (profile.avatar_url) {
+      try { window.localStorage.setItem(cacheKey, profile.avatar_url); } catch { /* ignore */ }
+    }
+  }, [profile.avatar_url, cached, cacheKey]);
+
   const needed = xpToNext(profile.level);
 
   return (
@@ -47,6 +61,9 @@ export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }:
               height={192}
               loading="eager"
               decoding="async"
+              onError={() => {
+                if (avatarSrc !== heroAvatar) setAvatarSrc(heroAvatar);
+              }}
             />
           </div>
           {/* Floating XP particles */}
