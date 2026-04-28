@@ -706,9 +706,21 @@ export function usePlayer() {
   }, [user, refresh]);
 
   const evaluateStatus = useCallback(async () => {
-    if (!user) return;
-    await supabase.rpc("evaluate_status_effects", { p_user: user.id });
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("evaluate_status_effects", { p_user: user.id });
+    if (error) {
+      toast.error("Could not re-evaluate status", { description: error.message });
+      return { ok: false, reason: error.message };
+    }
     await refresh();
+    const result = data as { ok?: boolean; applied?: unknown[]; expired?: number } | null;
+    const appliedCount = Array.isArray(result?.applied) ? result.applied.length : 0;
+    toast.success(appliedCount > 0 ? "Status updated" : "Status is up to date", {
+      description: appliedCount > 0
+        ? `${appliedCount} status effect${appliedCount === 1 ? "" : "s"} applied.`
+        : "No new status effects were needed right now.",
+    });
+    return result ?? { ok: true };
   }, [user, refresh]);
 
   const purchaseItem = useCallback(async (itemId: string, qty = 1) => {

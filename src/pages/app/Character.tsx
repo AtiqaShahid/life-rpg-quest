@@ -113,6 +113,11 @@ export default function Character() {
     try { await selectClass(cls, payToSkip); } finally { setBusy(false); }
   };
 
+  const onEvaluateStatus = async () => {
+    setBusy(true);
+    try { await evaluateStatus(); } finally { setBusy(false); }
+  };
+
   if (loading) return <div className="p-6 text-muted-foreground">Loading character…</div>;
 
   return (
@@ -125,8 +130,8 @@ export default function Character() {
               Your class shapes how XP is earned. Behavioral status effects adapt to your patterns.
             </p>
           </div>
-          <Button variant="outline" size="sm" disabled={busy} onClick={() => evaluateStatus()}>
-            Re-evaluate status
+          <Button variant="outline" size="sm" disabled={busy} onClick={onEvaluateStatus}>
+            {busy ? "Re-evaluating…" : "Re-evaluate status"}
           </Button>
         </div>
 
