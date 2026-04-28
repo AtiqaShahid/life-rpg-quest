@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, createContext, useContext, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, xpToNext } from "@/lib/rpg";
@@ -134,7 +134,7 @@ export type QuestProgress = {
 };
 export type Achievement = { id: string; code: string; title: string; description: string | null; unlocked_at: string };
 
-export function usePlayer() {
+function usePlayerInternal() {
   const { user } = useAuth();
   // Hydrate from localStorage cache for instant first paint on reload.
   const cacheRead = <T,>(key: string): T | null => {
