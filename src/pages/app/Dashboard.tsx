@@ -26,7 +26,9 @@ export default function Dashboard() {
     return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your save…</div>;
   }
 
-  const dailyQuests = p.quests.filter(q => q.is_daily);
+  const dailyQuests = p.quests.filter(
+    q => q.is_daily && (q.status === "active" || q.status === "locked" || q.status === "completed")
+  );
   const completedToday = dailyQuests.filter(q => q.completed).length;
   // Re-evaluate behavior whenever XP flashes (i.e. a new activity was logged).
   const behaviorKey = p.xpFlash?.key ?? "init";
