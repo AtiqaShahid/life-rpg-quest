@@ -23,7 +23,7 @@ function Countdown({ ends }: { ends: string }) {
   );
 }
 
-function EventCardView({ ev, onJoin, onClaim }: { ev: EventCard; onJoin: (id: string) => void; onClaim: (id: string) => void }) {
+function EventCardView({ ev, onJoin, onClaim }: { ev: EventCard; onJoin: (ev: EventCard) => void; onClaim: (id: string) => void }) {
   const meta = SCOPE_META[ev.scope];
   const Icon = meta.icon;
   const pct = ev.scope === "global" && ev.global_target
@@ -78,7 +78,7 @@ function EventCardView({ ev, onJoin, onClaim }: { ev: EventCard; onJoin: (id: st
             </button>
           )}
           {notJoined && ev.scope === "seasonal" && (
-            <button onClick={() => onJoin(ev.id)} className="rounded-xl bg-gradient-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition hover:opacity-90">
+            <button onClick={() => onJoin(ev)} className="rounded-xl bg-gradient-primary px-4 py-2 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition hover:opacity-90">
               Join campaign
             </button>
           )}
@@ -94,14 +94,23 @@ function EventCardView({ ev, onJoin, onClaim }: { ev: EventCard; onJoin: (id: st
 }
 
 export default function Events() {
-  const { data, loading, join, claim } = useEvents();
+  const { data, loading, join, joinSeasonal, claim } = useEvents();
 
   if (loading && !data) {
     return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading events…</div>;
   }
   if (!data) return null;
 
-  const handleJoin = async (id: string) => { try { await join(id); toast.success("Joined"); } catch (e) { toast.error((e as Error).message); } };
+  const handleJoin = async (ev: EventCard) => {
+    try {
+      if (ev.scope === "seasonal" && ev.template_id) {
+        await joinSeasonal(ev.template_id);
+      } else {
+        await join(ev.id);
+      }
+      toast.success("Joined");
+    } catch (e) { toast.error((e as Error).message); }
+  };
   const handleClaim = async (id: string) => {
     try { const r = await claim(id); toast.success(`+${r.xp} XP · +${r.coins} coins`); } catch (e) { toast.error((e as Error).message); }
   };
