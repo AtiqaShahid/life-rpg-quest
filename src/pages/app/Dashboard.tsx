@@ -6,6 +6,7 @@ import { QuestCard } from "@/components/rpg/QuestCard";
 import { ActivityFeed } from "@/components/rpg/ActivityFeed";
 import { LogActivityDialog } from "@/components/rpg/LogActivityDialog";
 import { BehaviorInsightsPanel } from "@/components/rpg/BehaviorInsightsPanel";
+import { StatusEffectsPanel } from "@/components/rpg/StatusEffectsPanel";
 import { Loader2, Scroll, Zap, Activity as ActivityIcon } from "lucide-react";
 
 const SectionTitle = ({ icon: Icon, title, hint }: { icon: React.ComponentType<{ className?: string }>; title: string; hint?: string }) => (
@@ -33,6 +34,8 @@ export default function Dashboard() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <CharacterCard profile={p.profile} stats={p.stats} streak={p.streak} xpFlash={p.xpFlash} levelUpFlash={p.levelUpFlash} />
+
+      <StatusEffectsPanel />
 
       <BehaviorInsightsPanel refreshKey={behaviorKey} />
 
