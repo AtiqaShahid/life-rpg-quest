@@ -970,6 +970,7 @@ export type Database = {
         Returns: number
       }
       get_fatigue_multiplier: { Args: { p_fatigue: number }; Returns: number }
+      get_life_score: { Args: never; Returns: Json }
       get_repeat_multiplier: {
         Args: { p_subtype: string; p_type: string; p_user: string }
         Returns: number
