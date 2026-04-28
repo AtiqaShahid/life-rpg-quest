@@ -1,10 +1,11 @@
 import { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag, Users, UserPlus, Medal } from "lucide-react";
+import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag, Users, UserPlus, Medal, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { EarnXpBar } from "./EarnXpBar";
 import { CurrencyBadges } from "./CurrencyBadges";
+import { ClassOnboardingGate } from "./ClassOnboardingGate";
 
 const NAV = [
   { to: "/app",              icon: LayoutDashboard, label: "Dashboard" },
@@ -12,6 +13,7 @@ const NAV = [
   { to: "/app/quests",       icon: Scroll,          label: "Quests" },
   { to: "/app/stats",        icon: BarChart3,       label: "Stats" },
   { to: "/app/skills",       icon: Sparkles,        label: "Skills" },
+  { to: "/app/character",    icon: Shield,          label: "Character" },
   { to: "/app/achievements", icon: Trophy,          label: "Achievements" },
   { to: "/app/shop",         icon: ShoppingBag,     label: "Shop" },
   { to: "/app/party",        icon: Users,           label: "Party" },
@@ -111,6 +113,8 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
 
       {/* Always-visible Earn XP action bar */}
       <EarnXpBar />
+      {/* First-time class selection gate */}
+      <ClassOnboardingGate />
     </div>
   );
 };
