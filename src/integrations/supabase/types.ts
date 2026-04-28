@@ -222,6 +222,292 @@ export type Database = {
         }
         Relationships: []
       }
+      event_history: {
+        Row: {
+          awarded_coins: number
+          awarded_items: string[]
+          awarded_tokens: number
+          awarded_xp: number
+          ended_at: string
+          event_id: string | null
+          id: string
+          outcome: Database["public"]["Enums"]["participation_status"]
+          progress: number
+          scope: Database["public"]["Enums"]["event_scope"]
+          target: number
+          template_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          awarded_coins?: number
+          awarded_items?: string[]
+          awarded_tokens?: number
+          awarded_xp?: number
+          ended_at?: string
+          event_id?: string | null
+          id?: string
+          outcome: Database["public"]["Enums"]["participation_status"]
+          progress?: number
+          scope: Database["public"]["Enums"]["event_scope"]
+          target?: number
+          template_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          awarded_coins?: number
+          awarded_items?: string[]
+          awarded_tokens?: number
+          awarded_xp?: number
+          ended_at?: string
+          event_id?: string | null
+          id?: string
+          outcome?: Database["public"]["Enums"]["participation_status"]
+          progress?: number
+          scope?: Database["public"]["Enums"]["event_scope"]
+          target?: number
+          template_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      event_participation: {
+        Row: {
+          awarded_items: string[]
+          claimed_at: string | null
+          completed_at: string | null
+          event_id: string
+          id: string
+          joined_at: string
+          meta: Json
+          progress: number
+          status: Database["public"]["Enums"]["participation_status"]
+          target: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          awarded_items?: string[]
+          claimed_at?: string | null
+          completed_at?: string | null
+          event_id: string
+          id?: string
+          joined_at?: string
+          meta?: Json
+          progress?: number
+          status?: Database["public"]["Enums"]["participation_status"]
+          target?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          awarded_items?: string[]
+          claimed_at?: string | null
+          completed_at?: string | null
+          event_id?: string
+          id?: string
+          joined_at?: string
+          meta?: Json
+          progress?: number
+          status?: Database["public"]["Enums"]["participation_status"]
+          target?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participation_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_rewards_catalog: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          effect: Json
+          icon: string
+          id: string
+          kind: string
+          name: string
+          rarity: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description: string
+          effect?: Json
+          icon?: string
+          id: string
+          kind: string
+          name: string
+          rarity?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          effect?: Json
+          icon?: string
+          id?: string
+          kind?: string
+          name?: string
+          rarity?: string
+        }
+        Relationships: []
+      }
+      event_templates: {
+        Row: {
+          active: boolean
+          base_coins: number
+          base_tokens: number
+          base_xp: number
+          category: string
+          created_at: string
+          criteria: Json
+          difficulty_max: number
+          difficulty_min: number
+          duration_hours: number
+          flavor: string | null
+          id: string
+          multiplier: number
+          reward_item_ids: string[]
+          scope: Database["public"]["Enums"]["event_scope"]
+          tagline: string
+          title: string
+          weight: number
+        }
+        Insert: {
+          active?: boolean
+          base_coins?: number
+          base_tokens?: number
+          base_xp?: number
+          category: string
+          created_at?: string
+          criteria?: Json
+          difficulty_max?: number
+          difficulty_min?: number
+          duration_hours?: number
+          flavor?: string | null
+          id: string
+          multiplier?: number
+          reward_item_ids?: string[]
+          scope: Database["public"]["Enums"]["event_scope"]
+          tagline: string
+          title: string
+          weight?: number
+        }
+        Update: {
+          active?: boolean
+          base_coins?: number
+          base_tokens?: number
+          base_xp?: number
+          category?: string
+          created_at?: string
+          criteria?: Json
+          difficulty_max?: number
+          difficulty_min?: number
+          duration_hours?: number
+          flavor?: string | null
+          id?: string
+          multiplier?: number
+          reward_item_ids?: string[]
+          scope?: Database["public"]["Enums"]["event_scope"]
+          tagline?: string
+          title?: string
+          weight?: number
+        }
+        Relationships: []
+      }
+      events: {
+        Row: {
+          category: string
+          created_at: string
+          criteria: Json
+          difficulty: number
+          ends_at: string
+          flavor: string | null
+          global_progress: number
+          global_target: number | null
+          id: string
+          multiplier: number
+          reward_coins: number
+          reward_item_ids: string[]
+          reward_tokens: number
+          reward_xp: number
+          scope: Database["public"]["Enums"]["event_scope"]
+          starts_at: string
+          status: Database["public"]["Enums"]["event_status"]
+          tagline: string
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          criteria?: Json
+          difficulty?: number
+          ends_at: string
+          flavor?: string | null
+          global_progress?: number
+          global_target?: number | null
+          id?: string
+          multiplier?: number
+          reward_coins?: number
+          reward_item_ids?: string[]
+          reward_tokens?: number
+          reward_xp?: number
+          scope: Database["public"]["Enums"]["event_scope"]
+          starts_at?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          tagline: string
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          criteria?: Json
+          difficulty?: number
+          ends_at?: string
+          flavor?: string | null
+          global_progress?: number
+          global_target?: number | null
+          id?: string
+          multiplier?: number
+          reward_coins?: number
+          reward_item_ids?: string[]
+          reward_tokens?: number
+          reward_xp?: number
+          scope?: Database["public"]["Enums"]["event_scope"]
+          starts_at?: string
+          status?: Database["public"]["Enums"]["event_status"]
+          tagline?: string
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "event_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       friendships: {
         Row: {
           addressee_id: string
@@ -807,6 +1093,38 @@ export type Database = {
         }
         Relationships: []
       }
+      user_event_inventory: {
+        Row: {
+          acquired_at: string
+          id: string
+          reward_id: string
+          source_event: string | null
+          user_id: string
+        }
+        Insert: {
+          acquired_at?: string
+          id?: string
+          reward_id: string
+          source_event?: string | null
+          user_id: string
+        }
+        Update: {
+          acquired_at?: string
+          id?: string
+          reward_id?: string
+          source_event?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_event_inventory_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "event_rewards_catalog"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_inventory: {
         Row: {
           created_at: string
@@ -943,6 +1261,7 @@ export type Database = {
         }
         Returns: Json
       }
+      claim_event_rewards: { Args: { p_event: string }; Returns: Json }
       cleanup_orphan_quests: { Args: never; Returns: Json }
       complete_quest: { Args: { p_quest_id: string }; Returns: Json }
       compute_activity_xp: {
@@ -969,6 +1288,7 @@ export type Database = {
         Args: { p_type: string; p_user: string }
         Returns: number
       }
+      get_event_dashboard: { Args: never; Returns: Json }
       get_fatigue_multiplier: { Args: { p_fatigue: number }; Returns: number }
       get_life_score: { Args: never; Returns: Json }
       get_repeat_multiplier: {
@@ -1007,6 +1327,7 @@ export type Database = {
         Args: { _party_id: string; _user_id: string }
         Returns: boolean
       }
+      join_event: { Args: { p_event: string }; Returns: Json }
       join_party: { Args: { p_invite_code: string }; Returns: Json }
       kick_party_member: { Args: { p_target: string }; Returns: Json }
       leave_party: { Args: never; Returns: Json }
@@ -1035,6 +1356,10 @@ export type Database = {
         Args: { p_item_id: string; p_quantity?: number }
         Returns: Json
       }
+      record_event_progress_for_user: {
+        Args: { p_event_kind: string; p_payload: Json; p_user: string }
+        Returns: undefined
+      }
       recover_fatigue: { Args: never; Returns: Json }
       refresh_leaderboard_entry: { Args: { p_user?: string }; Returns: Json }
       regenerate_daily_slot: { Args: { p_slot: number }; Returns: Json }
@@ -1046,6 +1371,7 @@ export type Database = {
         Args: { p_accept: boolean; p_id: string }
         Returns: Json
       }
+      roll_weekly_events_for_user: { Args: { p_user?: string }; Returns: Json }
       seed_compulsory_quests: { Args: never; Returns: Json }
       select_character_class: {
         Args: {
@@ -1064,6 +1390,7 @@ export type Database = {
         Args: { p_accountability: boolean; p_name: string }
         Returns: Json
       }
+      tick_event_lifecycle: { Args: never; Returns: Json }
       tick_party_streaks_daily: { Args: never; Returns: Json }
       unlock_quest: { Args: { p_quest_id: string }; Returns: Json }
       upgrade_skill: { Args: { p_skill_id: string }; Returns: Json }
@@ -1072,7 +1399,15 @@ export type Database = {
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
       character_class: "scholar" | "warrior" | "creator" | "leader"
+      event_scope: "weekly" | "seasonal" | "global"
+      event_status: "upcoming" | "active" | "completed" | "expired"
       friendship_status: "pending" | "accepted" | "blocked"
+      participation_status:
+        | "not_joined"
+        | "active"
+        | "completed"
+        | "expired"
+        | "claimed"
       party_role: "leader" | "member"
       quest_energy: "low" | "medium" | "high"
       quest_status:
@@ -1215,7 +1550,16 @@ export const Constants = {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
       character_class: ["scholar", "warrior", "creator", "leader"],
+      event_scope: ["weekly", "seasonal", "global"],
+      event_status: ["upcoming", "active", "completed", "expired"],
       friendship_status: ["pending", "accepted", "blocked"],
+      participation_status: [
+        "not_joined",
+        "active",
+        "completed",
+        "expired",
+        "claimed",
+      ],
       party_role: ["leader", "member"],
       quest_energy: ["low", "medium", "high"],
       quest_status: [
