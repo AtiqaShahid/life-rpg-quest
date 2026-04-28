@@ -222,6 +222,84 @@ export type Database = {
         }
         Relationships: []
       }
+      depth_events: {
+        Row: {
+          created_at: string
+          delta: Json
+          id: string
+          kind: string
+          message: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta?: Json
+          id?: string
+          kind: string
+          message: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: Json
+          id?: string
+          kind?: string
+          message?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      depth_state: {
+        Row: {
+          burnout: number
+          comeback_window_until: string | null
+          computed_at: string
+          consistency: number
+          energy: number
+          friction_expires_at: string | null
+          friction_multiplier: number
+          intensity_recent: number
+          rest_gap_days: number
+          snapshot: Json
+          streak_state: string
+          unstable_since: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          burnout?: number
+          comeback_window_until?: string | null
+          computed_at?: string
+          consistency?: number
+          energy?: number
+          friction_expires_at?: string | null
+          friction_multiplier?: number
+          intensity_recent?: number
+          rest_gap_days?: number
+          snapshot?: Json
+          streak_state?: string
+          unstable_since?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          burnout?: number
+          comeback_window_until?: string | null
+          computed_at?: string
+          consistency?: number
+          energy?: number
+          friction_expires_at?: string | null
+          friction_multiplier?: number
+          intensity_recent?: number
+          rest_gap_days?: number
+          snapshot?: Json
+          streak_state?: string
+          unstable_since?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       event_history: {
         Row: {
           awarded_coins: number
@@ -1277,6 +1355,8 @@ export type Database = {
         Returns: Json
       }
       create_party: { Args: { p_name: string }; Returns: Json }
+      depth_softcap: { Args: { k?: number; x: number }; Returns: number }
+      depth_xp_multiplier: { Args: { p_user: string }; Returns: number }
       evaluate_status_effects: { Args: { p_user?: string }; Returns: Json }
       expire_active_effects: { Args: never; Returns: Json }
       generate_epic_options: { Args: never; Returns: Json }
@@ -1288,6 +1368,7 @@ export type Database = {
         Args: { p_type: string; p_user: string }
         Returns: number
       }
+      get_depth_dashboard: { Args: never; Returns: Json }
       get_event_dashboard: { Args: never; Returns: Json }
       get_fatigue_multiplier: { Args: { p_fatigue: number }; Returns: number }
       get_life_score: { Args: never; Returns: Json }
@@ -1357,6 +1438,7 @@ export type Database = {
         Args: { p_item_id: string; p_quantity?: number }
         Returns: Json
       }
+      recompute_depth_state: { Args: { p_user: string }; Returns: Json }
       record_event_progress_for_user: {
         Args: { p_event_kind: string; p_payload: Json; p_user: string }
         Returns: undefined

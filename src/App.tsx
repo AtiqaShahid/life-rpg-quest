@@ -23,6 +23,7 @@ import FriendsPage from "./pages/app/Friends";
 import LeaderboardPage from "./pages/app/Leaderboard";
 import Analytics from "./pages/app/Analytics";
 import Events from "./pages/app/Events";
+import Depth from "./pages/app/Depth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="leaderboard" element={<LeaderboardPage />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="events" element={<Events />} />
+              <Route path="depth" element={<Depth />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 
