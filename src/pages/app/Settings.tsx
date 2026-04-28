@@ -5,6 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Settings as Cog, Upload } from "lucide-react";
 import heroAvatar from "@/assets/hero-avatar.png";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { DEFAULT_AVATARS } from "@/lib/defaultAvatars";
+import { cn } from "@/lib/utils";
 
 export default function Settings() {
   const p = usePlayer();
@@ -12,6 +15,8 @@ export default function Settings() {
   const [username, setUsername] = useState("");
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [savingAvatar, setSavingAvatar] = useState<string | null>(null);
 
   if (p.loading || !p.profile) return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div>;
 
@@ -38,9 +43,17 @@ export default function Settings() {
     setUsername(""); toast.success("Username updated");
   };
 
-  const resetAvatar = async () => {
-    await p.updateProfile({ avatar_url: null });
-    toast.success("Reset to default avatar");
+  const pickDefaultAvatar = async (url: string) => {
+    setSavingAvatar(url);
+    try {
+      await p.updateProfile({ avatar_url: url });
+      toast.success("Avatar updated");
+      setGalleryOpen(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to set avatar");
+    } finally {
+      setSavingAvatar(null);
+    }
   };
 
   return (
@@ -64,13 +77,49 @@ export default function Settings() {
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-primary px-4 py-2.5 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-[1.02] disabled:opacity-60">
               <Upload className="h-4 w-4" /> Upload custom
             </button>
-            <button onClick={resetAvatar} className="rounded-xl glass px-4 py-2.5 text-sm font-medium hover:shadow-glow-secondary transition-all">
+            <button onClick={() => setGalleryOpen(true)} className="rounded-xl glass px-4 py-2.5 text-sm font-medium hover:shadow-glow-secondary transition-all">
               Use default hero
             </button>
             <input ref={fileRef} type="file" accept="image/*" onChange={onUpload} className="hidden" />
           </div>
         </div>
       </section>
+
+      <Dialog open={galleryOpen} onOpenChange={setGalleryOpen}>
+        <DialogContent className="max-w-2xl glass-strong border-primary/30">
+          <DialogHeader>
+            <DialogTitle className="font-display">Choose your hero</DialogTitle>
+            <DialogDescription>Pick any avatar from the default gallery. You can still upload a custom image anytime.</DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+            {DEFAULT_AVATARS.map(a => {
+              const selected = p.profile?.avatar_url === a.url;
+              const isSaving = savingAvatar === a.url;
+              return (
+                <button
+                  key={a.id}
+                  type="button"
+                  onClick={() => pickDefaultAvatar(a.url)}
+                  disabled={!!savingAvatar}
+                  className={cn(
+                    "relative aspect-square rounded-full overflow-hidden ring-2 transition-all hover:scale-[1.04]",
+                    selected ? "ring-primary shadow-glow-primary" : "ring-border hover:ring-secondary",
+                    savingAvatar && !isSaving && "opacity-50"
+                  )}
+                  aria-label={`Select avatar ${a.id}`}
+                >
+                  <img src={a.url} alt={`Default avatar ${a.id}`} loading="lazy" className="h-full w-full object-cover" />
+                  {isSaving && (
+                    <span className="absolute inset-0 flex items-center justify-center bg-background/60">
+                      <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <section className="glass-strong rounded-3xl p-6">
         <h2 className="font-display text-lg font-semibold">Username</h2>
