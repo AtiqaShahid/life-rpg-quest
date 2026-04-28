@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag, Users, UserPlus, Medal, Shield, Brain, Flame } from "lucide-react";
+import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag, Users, UserPlus, Medal, Shield, Brain, Flame, Network } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { EarnXpBar } from "./EarnXpBar";
@@ -14,6 +14,7 @@ const NAV = [
   { to: "/app/stats",        icon: BarChart3,       label: "Stats" },
   { to: "/app/analytics",    icon: Brain,           label: "Analytics" },
   { to: "/app/events",       icon: Flame,           label: "Events" },
+  { to: "/app/depth",        icon: Network,         label: "Depth" },
   { to: "/app/skills",       icon: Sparkles,        label: "Skills" },
   { to: "/app/character",    icon: Shield,          label: "Character" },
   { to: "/app/achievements", icon: Trophy,          label: "Achievements" },
