@@ -1035,6 +1035,7 @@ export type Database = {
         Returns: Json
       }
       recover_fatigue: { Args: never; Returns: Json }
+      refresh_leaderboard_entry: { Args: { p_user?: string }; Returns: Json }
       regenerate_daily_slot: { Args: { p_slot: number }; Returns: Json }
       regenerate_daily_slots_all: { Args: never; Returns: Json }
       remove_friend: { Args: { p_friend_id: string }; Returns: Json }
