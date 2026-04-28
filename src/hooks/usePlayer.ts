@@ -796,3 +796,24 @@ function usePlayerInternal() {
     generateWeeklyOptions, generateEpicOptions, selectQuestOption,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Global single-source-of-truth provider.
+// All screens consume the SAME state via context, so a quest completion on the
+// Quests page instantly reflects on Dashboard / Profile / Stats / etc.
+// ---------------------------------------------------------------------------
+type PlayerContextValue = ReturnType<typeof usePlayerInternal>;
+const PlayerContext = createContext<PlayerContextValue | null>(null);
+
+export function PlayerProvider({ children }: { children: ReactNode }) {
+  const value = usePlayerInternal();
+  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+}
+
+export function usePlayer(): PlayerContextValue {
+  const ctx = useContext(PlayerContext);
+  if (!ctx) {
+    throw new Error("usePlayer must be used inside <PlayerProvider>. Wrap your app (or AppLayout) with <PlayerProvider>.");
+  }
+  return ctx;
+}
