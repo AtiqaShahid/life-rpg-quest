@@ -59,7 +59,23 @@ function buildProgressRow(questId: string, userId: string, pick: PoolQuest) {
 }
 
 export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number; skill_points: number };
-export type ProfileEconomy = Profile & { coins: number; tokens: number; fatigue: number; fatigue_updated_at: string };
+export type ProfileEconomy = Profile & {
+  coins: number; tokens: number;
+  exhaustion: number; exhaustion_updated_at: string;
+  class_type: CharacterClass | null;
+  class_changed_at: string | null;
+};
+export type CharacterClass = "scholar" | "warrior" | "creator" | "leader";
+export type ClassConfig = {
+  id: CharacterClass; name: string; tagline: string; description: string;
+  strengths: string[]; weaknesses: string[]; icon: string; color: string;
+  xp_modifiers: Record<string, number>; meta: Record<string, unknown>;
+};
+export type StatusEffectKind = "burnout" | "flow_state" | "fatigue";
+export type StatusEffect = {
+  id: string; kind: StatusEffectKind; multiplier: number; difficulty_modifier: number;
+  reason: string | null; starts_at: string; expires_at: string; active: boolean;
+};
 export type ShopItem = {
   id: string; name: string; description: string; category: "boost" | "protection" | "recovery";
   effect_kind: "xp_multiplier" | "streak_shield" | "fatigue_clear" | "streak_freeze" | "recovery_card";
@@ -124,6 +140,8 @@ export function usePlayer() {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [activeEffects, setActiveEffects] = useState<ActiveEffect[]>([]);
+  const [classCatalog, setClassCatalog] = useState<ClassConfig[]>([]);
+  const [statusEffects, setStatusEffects] = useState<StatusEffect[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [activityTypes, setActivityTypes] = useState<ActivityType[]>([]);
@@ -139,7 +157,7 @@ export function usePlayer() {
 
   const refresh = useCallback(async () => {
     if (!user) return;
-    const [p, s, sk, at, ac, q, ach, sc, sn, qp, si, inv, eff] = await Promise.all([
+    const [p, s, sk, at, ac, q, ach, sc, sn, qp, si, inv, eff, cc, se] = await Promise.all([
       supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("stats").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("streaks").select("*").eq("user_id", user.id).maybeSingle(),
@@ -153,11 +171,15 @@ export function usePlayer() {
       supabase.from("shop_items").select("*").eq("active", true).order("sort_order", { ascending: true }),
       supabase.from("user_inventory").select("id, item_id, quantity, last_used_at").eq("user_id", user.id),
       supabase.from("active_effects").select("id, item_id, effect_kind, effect_value, expires_at").eq("user_id", user.id),
+      supabase.from("class_catalog").select("*"),
+      supabase.from("user_status_effects").select("*").eq("user_id", user.id).eq("active", true).gt("expires_at", new Date().toISOString()),
     ]);
     setProfile(p.data as Profile | null);
     setShopItems(((si.data ?? []) as unknown as ShopItem[]));
     setInventory(((inv.data ?? []) as unknown as InventoryItem[]));
     setActiveEffects(((eff.data ?? []) as unknown as ActiveEffect[]));
+    setClassCatalog(((cc.data ?? []) as unknown as ClassConfig[]));
+    setStatusEffects(((se.data ?? []) as unknown as StatusEffect[]));
     setStats(s.data as Stats | null);
     setStreak(sk.data as Streak | null);
     setActivityTypes((at.data ?? []) as ActivityType[]);
@@ -180,6 +202,8 @@ export function usePlayer() {
       // Housekeeping: expire old effects, slow-recover fatigue.
       await supabase.rpc("expire_active_effects");
       await supabase.rpc("recover_fatigue");
+      // Re-evaluate behavioral status effects (Burnout / Flow / Fatigue)
+      await supabase.rpc("evaluate_status_effects", { p_user: user.id });
       await refresh();
     })();
   }, [user, refresh]);
@@ -660,6 +684,33 @@ export function usePlayer() {
 
   const xpNeeded = useMemo(() => profile ? xpToNext(profile.level) : 100, [profile]);
 
+  const selectClass = useCallback(async (cls: CharacterClass, payToSkip = false) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("select_character_class", {
+      p_class: cls, p_pay_to_skip: payToSkip,
+    });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string; days_remaining?: number; cost?: number; skip_cost?: number };
+    if (!r.ok) {
+      const msg =
+        r.reason === "cooldown" ? `Class change on cooldown — ${r.days_remaining?.toFixed(1)} day(s) left. Pay ${r.skip_cost} coins to bypass.` :
+        r.reason === "insufficient_coins" ? `Need ${r.cost} coins to bypass cooldown.` :
+        r.reason === "same_class" ? "You are already this class." :
+        r.reason ?? "Could not change class.";
+      toast.error(msg);
+      return r;
+    }
+    toast.success(`Class set: ${cls.charAt(0).toUpperCase() + cls.slice(1)}`);
+    await refresh();
+    return r;
+  }, [user, refresh]);
+
+  const evaluateStatus = useCallback(async () => {
+    if (!user) return;
+    await supabase.rpc("evaluate_status_effects", { p_user: user.id });
+    await refresh();
+  }, [user, refresh]);
+
   const purchaseItem = useCallback(async (itemId: string, qty = 1) => {
     if (!user) return { ok: false };
     const { data, error } = await supabase.rpc("purchase_shop_item", { p_item_id: itemId, p_quantity: qty });
@@ -701,6 +752,7 @@ export function usePlayer() {
     xpNeeded, xpFlash, levelUpFlash,
     shopItems, inventory, activeEffects,
     purchaseItem, useItem,
+    classCatalog, statusEffects, selectClass, evaluateStatus,
     refresh, logActivity, completeQuest, addQuest, addCustomQuest, removeQuest, updateProfile, awardXp,
     upgradeSkill, generateQuests, generateDynamicQuests,
     regenerateDailySlot, regenerateAllDailySlots,
