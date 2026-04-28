@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag, Users, UserPlus, Medal, Shield } from "lucide-react";
+import { LayoutDashboard, Zap, Scroll, BarChart3, Trophy, Settings, LogOut, Gamepad2, Sparkles, ShoppingBag, Users, UserPlus, Medal, Shield, Brain } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { EarnXpBar } from "./EarnXpBar";
@@ -12,6 +12,7 @@ const NAV = [
   { to: "/app/activities",   icon: Zap,             label: "Activities" },
   { to: "/app/quests",       icon: Scroll,          label: "Quests" },
   { to: "/app/stats",        icon: BarChart3,       label: "Stats" },
+  { to: "/app/analytics",    icon: Brain,           label: "Analytics" },
   { to: "/app/skills",       icon: Sparkles,        label: "Skills" },
   { to: "/app/character",    icon: Shield,          label: "Character" },
   { to: "/app/achievements", icon: Trophy,          label: "Achievements" },
@@ -101,7 +102,7 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-12 gap-1 px-2 py-2">
+        <div className="grid grid-cols-7 gap-1 px-2 py-2 overflow-x-auto">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === "/app"} className={mobileLinkClass}>
               <Icon className="h-4 w-4" />
