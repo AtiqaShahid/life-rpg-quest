@@ -183,6 +183,246 @@ export type Database = {
         }
         Relationships: []
       }
+      friendships: {
+        Row: {
+          addressee_id: string
+          created_at: string
+          id: string
+          requester_id: string
+          status: Database["public"]["Enums"]["friendship_status"]
+          updated_at: string
+        }
+        Insert: {
+          addressee_id: string
+          created_at?: string
+          id?: string
+          requester_id: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Update: {
+          addressee_id?: string
+          created_at?: string
+          id?: string
+          requester_id?: string
+          status?: Database["public"]["Enums"]["friendship_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      leaderboard_entries: {
+        Row: {
+          current_streak: number
+          discipline_score: number
+          fitness_xp: number
+          study_xp: number
+          total_xp: number
+          updated_at: string
+          user_id: string
+          username: string
+          week_start: string
+          weekly_quests: number
+          weekly_xp: number
+        }
+        Insert: {
+          current_streak?: number
+          discipline_score?: number
+          fitness_xp?: number
+          study_xp?: number
+          total_xp?: number
+          updated_at?: string
+          user_id: string
+          username: string
+          week_start?: string
+          weekly_quests?: number
+          weekly_xp?: number
+        }
+        Update: {
+          current_streak?: number
+          discipline_score?: number
+          fitness_xp?: number
+          study_xp?: number
+          total_xp?: number
+          updated_at?: string
+          user_id?: string
+          username?: string
+          week_start?: string
+          weekly_quests?: number
+          weekly_xp?: number
+        }
+        Relationships: []
+      }
+      parties: {
+        Row: {
+          accountability_mode: boolean
+          created_at: string
+          grace_used_week: string | null
+          id: string
+          invite_code: string
+          last_streak_date: string | null
+          leader_id: string
+          level: number
+          longest_shared_streak: number
+          name: string
+          shared_streak: number
+          updated_at: string
+          xp_pool: number
+        }
+        Insert: {
+          accountability_mode?: boolean
+          created_at?: string
+          grace_used_week?: string | null
+          id?: string
+          invite_code: string
+          last_streak_date?: string | null
+          leader_id: string
+          level?: number
+          longest_shared_streak?: number
+          name: string
+          shared_streak?: number
+          updated_at?: string
+          xp_pool?: number
+        }
+        Update: {
+          accountability_mode?: boolean
+          created_at?: string
+          grace_used_week?: string | null
+          id?: string
+          invite_code?: string
+          last_streak_date?: string | null
+          leader_id?: string
+          level?: number
+          longest_shared_streak?: number
+          name?: string
+          shared_streak?: number
+          updated_at?: string
+          xp_pool?: number
+        }
+        Relationships: []
+      }
+      party_activity_log: {
+        Row: {
+          activity_date: string
+          created_at: string
+          id: string
+          party_id: string
+          quests_completed: number
+          user_id: string
+          xp_contributed: number
+        }
+        Insert: {
+          activity_date?: string
+          created_at?: string
+          id?: string
+          party_id: string
+          quests_completed?: number
+          user_id: string
+          xp_contributed?: number
+        }
+        Update: {
+          activity_date?: string
+          created_at?: string
+          id?: string
+          party_id?: string
+          quests_completed?: number
+          user_id?: string
+          xp_contributed?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_activity_log_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_goals: {
+        Row: {
+          completed: boolean
+          created_at: string
+          current: number
+          expires_at: string | null
+          id: string
+          metric: string
+          party_id: string
+          period: string
+          target: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed?: boolean
+          created_at?: string
+          current?: number
+          expires_at?: string | null
+          id?: string
+          metric?: string
+          party_id: string
+          period?: string
+          target?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed?: boolean
+          created_at?: string
+          current?: number
+          expires_at?: string | null
+          id?: string
+          metric?: string
+          party_id?: string
+          period?: string
+          target?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_goals_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      party_members: {
+        Row: {
+          id: string
+          joined_at: string
+          last_active_date: string | null
+          party_id: string
+          role: Database["public"]["Enums"]["party_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          joined_at?: string
+          last_active_date?: string | null
+          party_id: string
+          role?: Database["public"]["Enums"]["party_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          joined_at?: string
+          last_active_date?: string | null
+          party_id?: string
+          role?: Database["public"]["Enums"]["party_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "party_members_party_id_fkey"
+            columns: ["party_id"]
+            isOneToOne: false
+            referencedRelation: "parties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -560,6 +800,36 @@ export type Database = {
           },
         ]
       }
+      weekly_leaderboard_rewards: {
+        Row: {
+          coins_awarded: number
+          created_at: string
+          id: string
+          rank: number
+          user_id: string
+          week_start: string
+          xp_awarded: number
+        }
+        Insert: {
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          rank: number
+          user_id: string
+          week_start: string
+          xp_awarded?: number
+        }
+        Update: {
+          coins_awarded?: number
+          created_at?: string
+          id?: string
+          rank?: number
+          user_id?: string
+          week_start?: string
+          xp_awarded?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -603,6 +873,7 @@ export type Database = {
         }
         Returns: Json
       }
+      create_party: { Args: { p_name: string }; Returns: Json }
       expire_active_effects: { Args: never; Returns: Json }
       generate_epic_options: { Args: never; Returns: Json }
       generate_quests: { Args: { p_force?: boolean }; Returns: Json }
@@ -633,6 +904,17 @@ export type Database = {
         }
         Returns: Json
       }
+      is_party_leader: {
+        Args: { _party_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_party_member: {
+        Args: { _party_id: string; _user_id: string }
+        Returns: boolean
+      }
+      join_party: { Args: { p_invite_code: string }; Returns: Json }
+      kick_party_member: { Args: { p_target: string }; Returns: Json }
+      leave_party: { Args: never; Returns: Json }
       lock_quest: { Args: { p_quest_id: string }; Returns: Json }
       log_activity:
         | {
@@ -661,15 +943,33 @@ export type Database = {
       recover_fatigue: { Args: never; Returns: Json }
       regenerate_daily_slot: { Args: { p_slot: number }; Returns: Json }
       regenerate_daily_slots_all: { Args: never; Returns: Json }
+      remove_friend: { Args: { p_friend_id: string }; Returns: Json }
       reset_daily_quests: { Args: { p_user: string }; Returns: undefined }
+      reset_weekly_leaderboard: { Args: never; Returns: Json }
+      respond_friend_request: {
+        Args: { p_accept: boolean; p_id: string }
+        Returns: Json
+      }
       seed_compulsory_quests: { Args: never; Returns: Json }
       select_quest_option: { Args: { p_quest_id: string }; Returns: Json }
+      send_friend_request: { Args: { p_username: string }; Returns: Json }
+      set_party_goal: {
+        Args: { p_metric: string; p_target: number; p_title: string }
+        Returns: Json
+      }
+      set_party_settings: {
+        Args: { p_accountability: boolean; p_name: string }
+        Returns: Json
+      }
+      tick_party_streaks_daily: { Args: never; Returns: Json }
       unlock_quest: { Args: { p_quest_id: string }; Returns: Json }
       upgrade_skill: { Args: { p_skill_id: string }; Returns: Json }
       use_inventory_item: { Args: { p_item_id: string }; Returns: Json }
     }
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
+      friendship_status: "pending" | "accepted" | "blocked"
+      party_role: "leader" | "member"
       quest_energy: "low" | "medium" | "high"
       quest_status:
         | "active"
@@ -809,6 +1109,8 @@ export const Constants = {
   public: {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
+      friendship_status: ["pending", "accepted", "blocked"],
+      party_role: ["leader", "member"],
       quest_energy: ["low", "medium", "high"],
       quest_status: [
         "active",
