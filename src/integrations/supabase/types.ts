@@ -1329,6 +1329,7 @@ export type Database = {
       }
       join_event: { Args: { p_event: string }; Returns: Json }
       join_party: { Args: { p_invite_code: string }; Returns: Json }
+      join_seasonal_template: { Args: { p_template: string }; Returns: Json }
       kick_party_member: { Args: { p_target: string }; Returns: Json }
       leave_party: { Args: never; Returns: Json }
       lock_quest: { Args: { p_quest_id: string }; Returns: Json }
