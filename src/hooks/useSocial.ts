@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { usePlayer } from "@/hooks/usePlayer";
 import { toast } from "sonner";
 
 export type LeaderboardScope = "global" | "weekly" | "friends" | "study" | "fitness" | "discipline";
@@ -58,8 +59,9 @@ export interface FriendRow {
   direction: "incoming" | "outgoing" | "friend";
 }
 
-export function useSocial() {
+function useSocialInternal() {
   const { user } = useAuth();
+  const player = usePlayer();
   const [loading, setLoading] = useState(true);
   const [party, setParty] = useState<Party | null>(null);
   const [members, setMembers] = useState<PartyMember[]>([]);
@@ -112,6 +114,11 @@ export function useSocial() {
     }));
   }, [user]);
 
+  const syncMyLeaderboard = useCallback(async () => {
+    if (!user) return;
+    await supabase.rpc("refresh_leaderboard_entry", { p_user: user.id });
+  }, [user]);
+
   const loadLeaderboard = useCallback(async (s: LeaderboardScope) => {
     if (!user) return;
     let q = supabase.from("leaderboard_entries").select("*").limit(50);
@@ -140,12 +147,17 @@ export function useSocial() {
     setLeaderboard((data ?? []) as LeaderboardEntry[]);
   }, [user]);
 
+  const completedQuestCount = useMemo(
+    () => player.quests.filter((q) => q.completed).length,
+    [player.quests],
+  );
+
   // ---------- BOOTSTRAP ----------
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    Promise.all([loadParty(), loadFriends(), loadLeaderboard(scope)]).finally(() => setLoading(false));
-  }, [user, loadParty, loadFriends, loadLeaderboard, scope]);
+    Promise.all([loadParty(), loadFriends(), syncMyLeaderboard().then(() => loadLeaderboard(scope))]).finally(() => setLoading(false));
+  }, [user, loadParty, loadFriends, loadLeaderboard, syncMyLeaderboard, scope]);
 
   // ---------- REALTIME ----------
   useEffect(() => {
@@ -160,6 +172,15 @@ export function useSocial() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [user, scope, loadParty, loadFriends, loadLeaderboard]);
+
+  useEffect(() => {
+    if (!user || player.loading || !player.profile) return;
+    let cancelled = false;
+    syncMyLeaderboard().then(() => {
+      if (!cancelled) loadLeaderboard(scope);
+    });
+    return () => { cancelled = true; };
+  }, [user, player.loading, player.profile?.xp, player.profile?.level, completedQuestCount, scope, syncMyLeaderboard, loadLeaderboard]);
 
   // ---------- ACTIONS ----------
   const createParty = useCallback(async (name: string) => {
@@ -231,6 +252,20 @@ export function useSocial() {
   return {
     loading, party, members, goal, friends, leaderboard, scope, setScope,
     createParty, joinParty, leaveParty, kickMember, updatePartySettings, setPartyGoal,
-    sendFriendRequest, respondFriend, removeFriend, refreshLeaderboard: () => loadLeaderboard(scope),
+    sendFriendRequest, respondFriend, removeFriend, refreshLeaderboard: () => syncMyLeaderboard().then(() => loadLeaderboard(scope)),
   };
+}
+
+type SocialContextValue = ReturnType<typeof useSocialInternal>;
+const SocialContext = createContext<SocialContextValue | null>(null);
+
+export function SocialProvider({ children }: { children: ReactNode }) {
+  const value = useSocialInternal();
+  return createElement(SocialContext.Provider, { value }, children);
+}
+
+export function useSocial(): SocialContextValue {
+  const ctx = useContext(SocialContext);
+  if (!ctx) throw new Error("useSocial must be used inside <SocialProvider>.");
+  return ctx;
 }
