@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, createElement, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { usePlayer } from "@/hooks/usePlayer";
@@ -261,7 +261,7 @@ const SocialContext = createContext<SocialContextValue | null>(null);
 
 export function SocialProvider({ children }: { children: ReactNode }) {
   const value = useSocialInternal();
-  return <SocialContext.Provider value={value}>{children}</SocialContext.Provider>;
+  return createElement(SocialContext.Provider, { value }, children);
 }
 
 export function useSocial(): SocialContextValue {
