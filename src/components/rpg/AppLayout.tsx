@@ -44,9 +44,9 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
 
   return (
     <div className="relative flex min-h-screen w-full">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:w-64 md:flex-col md:border-r md:border-border/50 md:bg-sidebar/60 md:backdrop-blur-xl">
-        <div className="flex items-center gap-2.5 px-5 py-5">
+      {/* Desktop sidebar — fixed, full viewport height, internal scroll only */}
+      <aside className="hidden md:fixed md:inset-y-0 md:left-0 md:z-40 md:flex md:h-screen md:w-64 md:flex-col md:border-r md:border-border/50 md:bg-sidebar/60 md:backdrop-blur-xl">
+        <div className="flex shrink-0 items-center gap-2.5 px-5 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-primary shadow-glow-primary">
             <Gamepad2 className="h-5 w-5 text-primary-foreground" />
           </div>
@@ -56,7 +56,7 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1 px-3">
+        <nav className="flex-1 min-h-0 overflow-y-auto space-y-0.5 px-3 py-1">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === "/app"} className={linkClass}>
               <Icon className="h-4 w-4" />
@@ -65,11 +65,11 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
           ))}
         </nav>
 
-        <div className="border-t border-border/50 p-3">
-          <div className="mb-2 truncate px-3 font-mono text-[11px] text-muted-foreground">{user?.email}</div>
+        <div className="shrink-0 border-t border-border/50 p-2">
+          <div className="mb-1 truncate px-3 font-mono text-[11px] text-muted-foreground">{user?.email}</div>
           <button
             onClick={() => signOut()}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
           >
             <LogOut className="h-4 w-4" /> Sign out
           </button>
@@ -93,7 +93,7 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
       </header>
 
       {/* Main */}
-      <main className="flex-1 overflow-y-auto px-4 pt-16 pb-44 sm:px-6 md:px-8 md:pt-6 md:pb-32">
+      <main className="flex-1 overflow-y-auto px-4 pt-16 pb-44 sm:px-6 md:ml-64 md:px-8 md:pt-6 md:pb-32">
         <div className="mx-auto mb-4 hidden max-w-6xl justify-end md:flex">
           <CurrencyBadges />
         </div>
