@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
+import { usePlayer } from "@/hooks/usePlayer";
 import { toast } from "sonner";
 
 export type LeaderboardScope = "global" | "weekly" | "friends" | "study" | "fitness" | "discipline";
@@ -58,8 +59,9 @@ export interface FriendRow {
   direction: "incoming" | "outgoing" | "friend";
 }
 
-export function useSocial() {
+function useSocialInternal() {
   const { user } = useAuth();
+  const player = usePlayer();
   const [loading, setLoading] = useState(true);
   const [party, setParty] = useState<Party | null>(null);
   const [members, setMembers] = useState<PartyMember[]>([]);
@@ -114,6 +116,7 @@ export function useSocial() {
 
   const loadLeaderboard = useCallback(async (s: LeaderboardScope) => {
     if (!user) return;
+    await supabase.rpc("refresh_leaderboard_entry", { p_user: user.id });
     let q = supabase.from("leaderboard_entries").select("*").limit(50);
     if (s === "weekly")     q = q.order("weekly_xp", { ascending: false });
     else if (s === "study") q = q.order("study_xp", { ascending: false });
@@ -139,6 +142,11 @@ export function useSocial() {
     const { data } = await q;
     setLeaderboard((data ?? []) as LeaderboardEntry[]);
   }, [user]);
+
+  const completedQuestCount = useMemo(
+    () => player.quests.filter((q) => q.completed).length,
+    [player.quests],
+  );
 
   // ---------- BOOTSTRAP ----------
   useEffect(() => {
