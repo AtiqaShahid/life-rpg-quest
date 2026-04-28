@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import { useDepth, type DepthSnapshot } from "@/hooks/useDepth";
-import { Loader2, Activity, Brain, Zap, Heart, AlertTriangle, Sparkles, ShieldAlert, TrendingUp, Lightbulb, Info } from "lucide-react";
+import { useDepth, useAdaptive, type DepthSnapshot } from "@/hooks/useDepth";
+import { Loader2, Activity, Brain, Zap, Heart, AlertTriangle, Sparkles, ShieldAlert, TrendingUp, Lightbulb, Info, Waves } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NODE_ICON: Record<string, typeof Brain> = {
@@ -95,6 +95,7 @@ function FrictionPanel({ snap }: { snap: DepthSnapshot }) {
 
 export default function Depth() {
   const { data, loading } = useDepth();
+  const { data: adaptive } = useAdaptive();
 
   const grouped = useMemo(() => {
     if (!data) return null;
@@ -125,6 +126,25 @@ export default function Depth() {
         <MultiplierGauge value={snap.xp_multiplier} />
         <FrictionPanel snap={snap} />
       </div>
+
+      {adaptive && (
+        <section className="glass rounded-2xl border border-secondary/20 p-4">
+          <div className="flex items-center gap-2">
+            <Waves className="h-4 w-4 text-secondary" />
+            <div className="font-mono text-[10px] uppercase tracking-widest text-secondary">Adaptive engine</div>
+            <span className={cn(
+              "ml-auto rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-widest",
+              adaptive.state.mode === "momentum" && "border-emerald-400/30 bg-emerald-400/10 text-emerald-200",
+              adaptive.state.mode === "recovery" && "border-amber-400/30 bg-amber-400/10 text-amber-200",
+              adaptive.state.mode === "intervention" && "border-rose-400/30 bg-rose-400/10 text-rose-200",
+              adaptive.state.mode === "stable" && "border-primary/30 bg-primary/10 text-primary",
+            )}>
+              {adaptive.state.mode}
+            </span>
+          </div>
+          <p className="mt-1.5 text-sm text-foreground/90">{adaptive.state.rationale}</p>
+        </section>
+      )}
 
       <section className="glass-strong rounded-2xl p-5">
         <div className="mb-3 flex items-end justify-between">

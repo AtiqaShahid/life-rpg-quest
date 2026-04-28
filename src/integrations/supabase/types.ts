@@ -183,6 +183,111 @@ export type Database = {
         }
         Relationships: []
       }
+      adaptive_events: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          message: string
+          payload: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          message: string
+          payload?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          message?: string
+          payload?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
+      adaptive_state: {
+        Row: {
+          computed_at: string
+          difficulty_bias: number
+          mode: string
+          rationale: string
+          reward_bias: number
+          risk_burnout: number
+          risk_dropoff: number
+          risk_streak_break: number
+          signals: Json
+          user_id: string
+          xp_bias: number
+        }
+        Insert: {
+          computed_at?: string
+          difficulty_bias?: number
+          mode?: string
+          rationale?: string
+          reward_bias?: number
+          risk_burnout?: number
+          risk_dropoff?: number
+          risk_streak_break?: number
+          signals?: Json
+          user_id: string
+          xp_bias?: number
+        }
+        Update: {
+          computed_at?: string
+          difficulty_bias?: number
+          mode?: string
+          rationale?: string
+          reward_bias?: number
+          risk_burnout?: number
+          risk_dropoff?: number
+          risk_streak_break?: number
+          signals?: Json
+          user_id?: string
+          xp_bias?: number
+        }
+        Relationships: []
+      }
+      behavior_memory: {
+        Row: {
+          avoidance: Json
+          failure_triggers: Json
+          last_session_minutes: number
+          peak_hours: Json
+          preferred_types: Json
+          recovery_pattern: Json
+          reward_responsiveness: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avoidance?: Json
+          failure_triggers?: Json
+          last_session_minutes?: number
+          peak_hours?: Json
+          preferred_types?: Json
+          recovery_pattern?: Json
+          reward_responsiveness?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avoidance?: Json
+          failure_triggers?: Json
+          last_session_minutes?: number
+          peak_hours?: Json
+          preferred_types?: Json
+          recovery_pattern?: Json
+          reward_responsiveness?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       class_catalog: {
         Row: {
           color: string
@@ -1330,6 +1435,7 @@ export type Database = {
         Args: { p_recovery: boolean; p_user: string }
         Returns: Record<string, unknown>
       }
+      adaptive_quest_pick: { Args: { p_user: string }; Returns: Json }
       add_custom_quest: {
         Args: {
           p_description?: string
@@ -1346,6 +1452,7 @@ export type Database = {
         Args: { p_duration: number; p_subtype: string; p_type: string }
         Returns: number
       }
+      compute_adaptive_state: { Args: { p_user: string }; Returns: Json }
       compute_quest_xp: {
         Args: {
           p_difficulty: number
@@ -1363,6 +1470,7 @@ export type Database = {
       generate_quests: { Args: { p_force?: boolean }; Returns: Json }
       generate_weekly_options: { Args: never; Returns: Json }
       get_active_xp_multiplier: { Args: { p_user: string }; Returns: number }
+      get_adaptive_dashboard: { Args: never; Returns: Json }
       get_behavior_profile: { Args: never; Returns: Json }
       get_class_xp_multiplier: {
         Args: { p_type: string; p_user: string }

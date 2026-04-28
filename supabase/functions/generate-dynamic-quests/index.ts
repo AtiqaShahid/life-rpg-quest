@@ -421,7 +421,7 @@ serve(async (req) => {
       if (slots.length === 0) return json({ ok: true, generated: 0, skipped: [...lockedSlots], reason: "all_slots_locked" });
     }
 
-    const [profileRes, typesRes, memoryRes] = await Promise.all([
+    const [profileRes, typesRes, memoryRes, adaptiveRes] = await Promise.all([
       supa.rpc("get_behavior_profile"),
       supa.from("activity_types").select("id, label, stat, description"),
       supa
@@ -431,6 +431,7 @@ serve(async (req) => {
         .in("status", ["active", "locked", "candidate"])
         .order("created_at", { ascending: false })
         .limit(30),
+      supa.rpc("adaptive_quest_pick", { p_user: userId }),
     ]);
 
     if (profileRes.error) return json({ error: "profile_failed", detail: profileRes.error.message }, 500);
@@ -439,6 +440,12 @@ serve(async (req) => {
     const types = typesRes.data ?? [];
     const allowedTypeIds = types.map((t: { id: string }) => t.id);
     const memory = ((memoryRes.data ?? []) as QuestMemory[]).filter((item) => item.title);
+    // Fold the adaptive engine snapshot into the profile so the AI biases
+    // difficulty band + preferred types invisibly. Failure to read it is non-fatal.
+    const adaptiveBlock = adaptiveRes && !adaptiveRes.error ? adaptiveRes.data : null;
+    const enrichedProfile = adaptiveBlock
+      ? { ...(profileRes.data as Record<string, unknown> ?? {}), adaptive: adaptiveBlock }
+      : profileRes.data;
     const needed = mode === "dynamic-options" ? 3 : slots.length;
     const accepted: GeneratedQuest[] = [];
     const rejected: QuestMemory[] = [];
@@ -448,7 +455,7 @@ serve(async (req) => {
         apiKey: LOVABLE_API_KEY,
         mode,
         slots,
-        profile: profileRes.data,
+        profile: enrichedProfile,
         allowedTypeIds,
         types,
         memory,
@@ -473,7 +480,7 @@ serve(async (req) => {
         apiKey: LOVABLE_API_KEY,
         mode,
         slots,
-        profile: profileRes.data,
+        profile: enrichedProfile,
         allowedTypeIds,
         types,
         memory: [],
