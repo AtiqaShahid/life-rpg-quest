@@ -42,42 +42,49 @@ export const ClassOnboardingGate = () => {
   const selectedConfig = classCatalog.find((c) => c.id === selected) ?? null;
 
   const handleContinue = async () => {
+    console.debug("[ClassOnboardingGate] continue", { step, selected, saving, entering });
     if (step === 1) { setStep(2); return; }
     if (step === 2) {
-      if (!selected) return;
-      setSaving(true);
-      try {
-        await selectClass(selected, false);
-        setSavedClass(selected);
-        setStep(3);
-      } finally {
-        setSaving(false);
-      }
+      if (!selected) { toast.error("Choose a class first."); return; }
+      setStep(3);
       return;
     }
-    // Step 3: explicitly close the gate and route the user to the dashboard.
-    if (entering) return;
+    if (!selected || entering) return;
     setEntering(true);
+    setSaving(true);
+    setSavedClass(selected);
     try {
-      navigate("/app");
-      // Clear saved flag so the guard above unmounts the gate on next render.
+      const result = await selectClass(selected, false);
+      console.debug("[ClassOnboardingGate] class-save-result", result);
+      if (!result?.ok) {
+        setEntering(false);
+        setSaving(false);
+        setSavedClass(null);
+        return;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 280));
+      navigate("/app/leaderboard", { replace: true });
       setSavedClass(null);
     } catch (err) {
       console.error("[ClassOnboardingGate] enter-world failed", err);
-      toast.error("Couldn't enter the world. Please try again.");
+      toast.error("Couldn't save your class. Please try again.");
       setEntering(false);
+      setSaving(false);
+      setSavedClass(null);
     }
   };
 
   const handleBack = () => {
+    if (saving || entering) return;
+    console.debug("[ClassOnboardingGate] back", { step, selected });
     if (step === 2) setStep(1);
     else if (step === 3) setStep(2);
   };
 
   const ctaLabel =
     step === 1 ? "Begin character setup"
-    : step === 2 ? (saving ? "Saving your class…" : (selected ? "Continue" : "Select a class to continue"))
-    : (entering ? "Entering…" : "Enter the world");
+    : step === 2 ? (selected ? "Continue" : "Select a class to continue")
+    : (entering ? "Entering leaderboard…" : "Enter the world");
 
   const ctaDisabled =
     saving || entering || (step === 2 && !selected);
