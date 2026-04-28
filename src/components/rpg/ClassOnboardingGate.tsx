@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { toast } from "sonner";
 
 /**
@@ -27,6 +27,7 @@ const PLAYSTYLE_BLURB: Record<CharacterClass, string> = {
 export const ClassOnboardingGate = () => {
   const { profile, classCatalog, selectClass, loading } = usePlayer();
   const navigate = useNavigate();
+  const location = useLocation();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selected, setSelected] = useState<CharacterClass | null>(null);
   const [saving, setSaving] = useState(false);
@@ -35,6 +36,9 @@ export const ClassOnboardingGate = () => {
 
   const econ = profile as unknown as { class_type: CharacterClass | null } | null;
   if (loading || !profile) return null;
+  // Allow the dedicated Character page to handle class selection inline so its
+  // buttons (Re-evaluate status, Choose this path) remain interactive.
+  if (location.pathname.startsWith("/app/character")) return null;
   // Keep the gate mounted through step 3 even after the class is saved,
   // so the user gets to see the confirmation and press "Enter the world".
   if (econ?.class_type && !savedClass) return null;
