@@ -17,6 +17,9 @@ import Achievements from "./pages/app/Achievements";
 import SkillTree from "./pages/app/SkillTree";
 import Settings from "./pages/app/Settings";
 import Shop from "./pages/app/Shop";
+import PartyPage from "./pages/app/Party";
+import FriendsPage from "./pages/app/Friends";
+import LeaderboardPage from "./pages/app/Leaderboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,6 +50,9 @@ const App = () => (
               <Route path="skills" element={<SkillTree />} />
               <Route path="achievements" element={<Achievements />} />
               <Route path="shop" element={<Shop />} />
+              <Route path="party" element={<PartyPage />} />
+              <Route path="friends" element={<FriendsPage />} />
+              <Route path="leaderboard" element={<LeaderboardPage />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 
