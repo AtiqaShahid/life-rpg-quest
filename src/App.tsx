@@ -7,6 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/rpg/AppLayout";
 import { PlayerProvider } from "@/hooks/usePlayer";
+import { SocialProvider } from "@/hooks/useSocial";
 import { CustomCursor } from "@/components/rpg/CustomCursor";
 import { useEffect } from "react";
 import { installUiSounds } from "@/lib/uiSound";
@@ -43,6 +44,7 @@ const App = () => {
       <BrowserRouter>
         <AuthProvider>
           <PlayerProvider>
+            <SocialProvider>
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
@@ -74,6 +76,7 @@ const App = () => {
 
             <Route path="*" element={<NotFound />} />
             </Routes>
+            </SocialProvider>
           </PlayerProvider>
         </AuthProvider>
       </BrowserRouter>
