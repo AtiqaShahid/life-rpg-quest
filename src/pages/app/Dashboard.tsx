@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, lazy, Suspense } from "react";
 import { usePlayer, type QuestRich } from "@/hooks/usePlayer";
 import { useSocial } from "@/hooks/useSocial";
 import { useAuth } from "@/context/AuthContext";
@@ -6,11 +6,13 @@ import { CharacterCard } from "@/components/rpg/CharacterCard";
 import { StatusEffectsPanel } from "@/components/rpg/StatusEffectsPanel";
 import { QuestCard } from "@/components/rpg/QuestCard";
 import * as Lucide from "lucide-react";
-import { Loader2, Scroll, Activity as ActivityIcon, TrendingUp, Trophy, Users, Crown, Shield } from "lucide-react";
+import { Scroll, Activity as ActivityIcon, TrendingUp, Trophy, Users, Crown, Shield } from "lucide-react";
 import { format } from "date-fns";
 import { statMeta } from "@/lib/rpg";
 import { subtypeLabel } from "@/lib/activityCatalog";
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip, CartesianGrid, Area, AreaChart } from "recharts";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const DailyProgressChart = lazy(() => import("@/components/rpg/DailyProgressChart"));
 
 const SectionTitle = ({ icon: Icon, title, hint }: { icon: React.ComponentType<{ className?: string }>; title: string; hint?: string }) => (
   <div className="mb-3 flex items-end justify-between">
@@ -75,11 +77,7 @@ export default function Dashboard() {
   }, [todaysActivities]);
 
   if (p.loading || !p.profile || !p.stats || !p.streak) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your save…
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   // ---- Pending quests only ----
@@ -172,32 +170,9 @@ export default function Dashboard() {
               <div className="font-display text-2xl font-bold text-accent">{p.streak.current_streak}🔥</div>
             </div>
           </div>
-          <div className="h-48 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={hourlyChart} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="xpGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} interval="preserveStartEnd" />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                <Tooltip
-                  contentStyle={{
-                    background: "hsl(var(--card))",
-                    border: "1px solid hsl(var(--border))",
-                    borderRadius: 8,
-                    fontSize: 12,
-                  }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
-                />
-                <Area type="monotone" dataKey="cumXp" name="Cumulative XP" stroke="hsl(var(--primary))" strokeWidth={2} fill="url(#xpGradient)" />
-                <Line type="monotone" dataKey="xp" name="Hourly XP" stroke="hsl(var(--secondary))" strokeWidth={2} dot={{ r: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+          <Suspense fallback={<Skeleton className="h-44 sm:h-48 w-full rounded-xl" />}>
+            <DailyProgressChart data={hourlyChart} />
+          </Suspense>
         </div>
       </section>
 
@@ -343,6 +318,39 @@ export default function Dashboard() {
             )}
           </div>
         </section>
+      </div>
+    </div>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+      <div className="glass-strong rounded-3xl p-4 sm:p-6 md:p-8">
+        <div className="grid items-center gap-5 md:grid-cols-[auto,1fr] md:gap-8">
+          <div className="mx-auto md:mx-0">
+            <Skeleton className="h-28 w-28 sm:h-36 sm:w-36 md:h-44 md:w-44 lg:h-48 lg:w-48 rounded-full" />
+          </div>
+          <div className="space-y-3">
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-8 w-56" />
+            <Skeleton className="h-3 w-full" />
+            <div className="grid grid-cols-4 gap-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Skeleton className="h-40 rounded-2xl lg:col-span-1" />
+        <Skeleton className="h-40 rounded-2xl lg:col-span-2" />
+      </div>
+      <Skeleton className="h-72 w-full rounded-2xl" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-64 rounded-2xl" />
       </div>
     </div>
   );
