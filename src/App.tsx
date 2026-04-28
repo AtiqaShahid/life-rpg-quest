@@ -21,6 +21,7 @@ import Shop from "./pages/app/Shop";
 import PartyPage from "./pages/app/Party";
 import FriendsPage from "./pages/app/Friends";
 import LeaderboardPage from "./pages/app/Leaderboard";
+import Analytics from "./pages/app/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="party" element={<PartyPage />} />
               <Route path="friends" element={<FriendsPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
+              <Route path="analytics" element={<Analytics />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 
