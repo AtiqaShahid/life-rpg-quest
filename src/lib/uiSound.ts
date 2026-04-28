@@ -4,6 +4,8 @@
 let ctx: AudioContext | null = null;
 let enabled = true;
 const lastPlay = new Map<string, number>();
+let lastHoverEl: HTMLElement | null = null;
+let lastHoverAt = 0;
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -51,7 +53,7 @@ function debounced(key: string, ms = 120): boolean {
 
 export const uiSound = {
   hover() {
-    if (!debounced("hover", 90)) return;
+    // Per-call debounce handled by caller via element-aware logic.
     tone({ freq: 880, type: "sine", duration: 0.06, gain: 0.025, sweepTo: 1320 });
   },
   click() {
@@ -71,7 +73,7 @@ export function installUiSounds() {
   const isInteractive = (el: Element | null): HTMLElement | null => {
     if (!el) return null;
     const node = (el as HTMLElement).closest(
-      'button, a, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [data-sound], input[type="checkbox"], input[type="radio"], input[type="submit"], input[type="button"], select, summary, label[for]'
+      'button, a, [role="button"], [role="link"], [role="menuitem"], [role="tab"], [data-sound], [data-hover-sound="true"], .hover-sound, .interactive, input[type="checkbox"], input[type="radio"], input[type="submit"], input[type="button"], select, summary, label[for], [class*="card"], [class*="Card"]'
     );
     return node as HTMLElement | null;
   };
@@ -82,12 +84,20 @@ export function installUiSounds() {
     (e) => {
       const target = isInteractive(e.target as Element);
       if (!target) return;
-      // Only fire when entering a new interactive element
-      const related = e.relatedTarget as Element | null;
-      if (related && target.contains(related)) return;
+      // Same interactive ancestor as before? skip (we're moving inside it)
+      if (target === lastHoverEl) return;
+      const now = performance.now();
+      // Global rate-limit so rapid traversals don't spam
+      if (now - lastHoverAt < 40) {
+        lastHoverEl = target;
+        lastHoverAt = now;
+        return;
+      }
+      lastHoverEl = target;
+      lastHoverAt = now;
       uiSound.hover();
     },
-    { passive: true }
+    { passive: true, capture: true }
   );
 
   // Click feedback (capture so it fires even if handlers stopPropagation)
