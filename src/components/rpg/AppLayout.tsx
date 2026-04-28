@@ -102,7 +102,7 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
 
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-background/90 backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-12 gap-1 px-2 py-2">
+        <div className="grid grid-cols-7 gap-1 px-2 py-2 overflow-x-auto">
           {NAV.map(({ to, icon: Icon, label }) => (
             <NavLink key={to} to={to} end={to === "/app"} className={mobileLinkClass}>
               <Icon className="h-4 w-4" />
