@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/rpg/AppLayout";
+import { PlayerProvider } from "@/hooks/usePlayer";
 import { CustomCursor } from "@/components/rpg/CustomCursor";
 import { useEffect } from "react";
 import { installUiSounds } from "@/lib/uiSound";
@@ -41,7 +42,8 @@ const App = () => {
       <CustomCursor />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <PlayerProvider>
+            <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
 
@@ -71,7 +73,8 @@ const App = () => {
             </Route>
 
             <Route path="*" element={<NotFound />} />
-          </Routes>
+            </Routes>
+          </PlayerProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

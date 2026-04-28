@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, createContext, useContext, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, xpToNext } from "@/lib/rpg";
@@ -134,7 +134,7 @@ export type QuestProgress = {
 };
 export type Achievement = { id: string; code: string; title: string; description: string | null; unlocked_at: string };
 
-export function usePlayer() {
+function usePlayerInternal() {
   const { user } = useAuth();
   // Hydrate from localStorage cache for instant first paint on reload.
   const cacheRead = <T,>(key: string): T | null => {
@@ -795,4 +795,25 @@ export function usePlayer() {
     lockQuest, unlockQuest,
     generateWeeklyOptions, generateEpicOptions, selectQuestOption,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Global single-source-of-truth provider.
+// All screens consume the SAME state via context, so a quest completion on the
+// Quests page instantly reflects on Dashboard / Profile / Stats / etc.
+// ---------------------------------------------------------------------------
+type PlayerContextValue = ReturnType<typeof usePlayerInternal>;
+const PlayerContext = createContext<PlayerContextValue | null>(null);
+
+export function PlayerProvider({ children }: { children: ReactNode }) {
+  const value = usePlayerInternal();
+  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+}
+
+export function usePlayer(): PlayerContextValue {
+  const ctx = useContext(PlayerContext);
+  if (!ctx) {
+    throw new Error("usePlayer must be used inside <PlayerProvider>. Wrap your app (or AppLayout) with <PlayerProvider>.");
+  }
+  return ctx;
 }
