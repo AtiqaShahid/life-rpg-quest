@@ -6,6 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/rpg/AppLayout";
+import { CustomCursor } from "@/components/rpg/CustomCursor";
+import { useEffect } from "react";
+import { installUiSounds } from "@/lib/uiSound";
 
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
@@ -28,11 +31,14 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
+const App = () => {
+  useEffect(() => { installUiSounds(); }, []);
+  return (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
       <Sonner theme="dark" position="top-center" toastOptions={{ className: "glass-strong" }} />
+      <CustomCursor />
       <BrowserRouter>
         <AuthProvider>
           <Routes>
@@ -70,6 +76,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
