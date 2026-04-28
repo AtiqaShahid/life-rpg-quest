@@ -22,6 +22,20 @@ export type DepthDashboard = {
   events: DepthEvent[];
 };
 
+export type AdaptiveState = {
+  mode: "stable" | "recovery" | "momentum" | "intervention";
+  difficulty_bias: number;
+  xp_bias: number;
+  reward_bias: number;
+  risk_burnout: number;
+  risk_streak_break: number;
+  risk_dropoff: number;
+  rationale: string;
+  signals: Record<string, number | string>;
+};
+export type AdaptiveEvent = { id: string; kind: string; message: string; payload: Record<string, unknown>; created_at: string };
+export type AdaptiveDashboard = { state: AdaptiveState; events: AdaptiveEvent[]; memory: Record<string, unknown> };
+
 export function useDepth() {
   const { user } = useAuth();
   const [data, setData] = useState<DepthDashboard | null>(null);
@@ -35,6 +49,26 @@ export function useDepth() {
     setLoading(false);
     if (error) { setError(error.message); return; }
     setData(res as unknown as DepthDashboard);
+  }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  return { data, loading, error, refresh: load };
+}
+
+export function useAdaptive() {
+  const { user } = useAuth();
+  const [data, setData] = useState<AdaptiveDashboard | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    const { data: res, error } = await supabase.rpc("get_adaptive_dashboard" as never);
+    setLoading(false);
+    if (error) { setError(error.message); return; }
+    setData(res as unknown as AdaptiveDashboard);
   }, [user]);
 
   useEffect(() => { load(); }, [load]);
