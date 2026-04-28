@@ -105,6 +105,12 @@ export function useEvents() {
     await load();
   }, [load]);
 
+  const joinSeasonal = useCallback(async (templateId: string) => {
+    const { error } = await supabase.rpc("join_seasonal_template" as never, { p_template: templateId } as never);
+    if (error) throw error;
+    await load();
+  }, [load]);
+
   const claim = useCallback(async (eventId: string) => {
     const { data: res, error } = await supabase.rpc("claim_event_rewards" as never, { p_event: eventId } as never);
     if (error) throw error;
@@ -112,7 +118,7 @@ export function useEvents() {
     return res as { xp: number; coins: number; tokens: number; items: string[] };
   }, [load]);
 
-  return { data, loading, error, refresh: load, join, claim };
+  return { data, loading, error, refresh: load, join, joinSeasonal, claim };
 }
 
 export function formatTimeLeft(iso: string): string {
