@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, createContext, useContext, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useCallback, createContext, createElement, useContext, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/context/AuthContext";
 import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, xpToNext } from "@/lib/rpg";
@@ -807,7 +807,7 @@ const PlayerContext = createContext<PlayerContextValue | null>(null);
 
 export function PlayerProvider({ children }: { children: ReactNode }) {
   const value = usePlayerInternal();
-  return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
+  return createElement(PlayerContext.Provider, { value }, children);
 }
 
 export function usePlayer(): PlayerContextValue {
