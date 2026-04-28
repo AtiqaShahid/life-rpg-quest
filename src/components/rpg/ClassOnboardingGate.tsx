@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { ArrowLeft, Check, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 /**
  * Multi-step onboarding gate. Blocks the dashboard until the user picks a class.
@@ -24,13 +26,18 @@ const PLAYSTYLE_BLURB: Record<CharacterClass, string> = {
 
 export const ClassOnboardingGate = () => {
   const { profile, classCatalog, selectClass, loading } = usePlayer();
+  const navigate = useNavigate();
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selected, setSelected] = useState<CharacterClass | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedClass, setSavedClass] = useState<CharacterClass | null>(null);
+  const [entering, setEntering] = useState(false);
 
   const econ = profile as unknown as { class_type: CharacterClass | null } | null;
   if (loading || !profile) return null;
-  if (econ?.class_type) return null;
+  // Keep the gate mounted through step 3 even after the class is saved,
+  // so the user gets to see the confirmation and press "Enter the world".
+  if (econ?.class_type && !savedClass) return null;
 
   const selectedConfig = classCatalog.find((c) => c.id === selected) ?? null;
 
@@ -41,13 +48,25 @@ export const ClassOnboardingGate = () => {
       setSaving(true);
       try {
         await selectClass(selected, false);
+        setSavedClass(selected);
         setStep(3);
       } finally {
         setSaving(false);
       }
       return;
     }
-    // step 3 → unmount handled by class_type becoming non-null on next render
+    // Step 3: explicitly close the gate and route the user to the dashboard.
+    if (entering) return;
+    setEntering(true);
+    try {
+      navigate("/app");
+      // Clear saved flag so the guard above unmounts the gate on next render.
+      setSavedClass(null);
+    } catch (err) {
+      console.error("[ClassOnboardingGate] enter-world failed", err);
+      toast.error("Couldn't enter the world. Please try again.");
+      setEntering(false);
+    }
   };
 
   const handleBack = () => {
@@ -57,10 +76,11 @@ export const ClassOnboardingGate = () => {
 
   const ctaLabel =
     step === 1 ? "Begin character setup"
-    : step === 2 ? (selected ? "Continue" : "Select a class to continue")
-    : "Enter the world";
+    : step === 2 ? (saving ? "Saving your class…" : (selected ? "Continue" : "Select a class to continue"))
+    : (entering ? "Entering…" : "Enter the world");
 
-  const ctaDisabled = (step === 2 && !selected) || saving;
+  const ctaDisabled =
+    saving || entering || (step === 2 && !selected);
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/95 p-4 backdrop-blur-md">
@@ -191,14 +211,16 @@ export const ClassOnboardingGate = () => {
         </div>
 
         {/* Sticky footer CTA */}
-        <div className="border-t border-border/40 bg-background/40 px-5 py-3 backdrop-blur sm:px-7">
+        <div className="relative z-10 border-t border-border/40 bg-background/40 px-5 py-3 backdrop-blur sm:px-7"
+             style={{ pointerEvents: "auto" }}>
           <Button
+            type="button"
             className="w-full transition-all duration-200"
             size="lg"
             disabled={ctaDisabled}
             onClick={handleContinue}
           >
-            {saving ? "Saving your class…" : ctaLabel}
+            {ctaLabel}
           </Button>
         </div>
       </div>
