@@ -183,6 +183,45 @@ export type Database = {
         }
         Relationships: []
       }
+      class_catalog: {
+        Row: {
+          color: string
+          description: string
+          icon: string
+          id: Database["public"]["Enums"]["character_class"]
+          meta: Json
+          name: string
+          strengths: string[]
+          tagline: string
+          weaknesses: string[]
+          xp_modifiers: Json
+        }
+        Insert: {
+          color?: string
+          description: string
+          icon?: string
+          id: Database["public"]["Enums"]["character_class"]
+          meta?: Json
+          name: string
+          strengths?: string[]
+          tagline: string
+          weaknesses?: string[]
+          xp_modifiers?: Json
+        }
+        Update: {
+          color?: string
+          description?: string
+          icon?: string
+          id?: Database["public"]["Enums"]["character_class"]
+          meta?: Json
+          name?: string
+          strengths?: string[]
+          tagline?: string
+          weaknesses?: string[]
+          xp_modifiers?: Json
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           addressee_id: string
@@ -426,10 +465,12 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          class_changed_at: string | null
+          class_type: Database["public"]["Enums"]["character_class"] | null
           coins: number
           created_at: string
-          fatigue: number
-          fatigue_updated_at: string
+          exhaustion: number
+          exhaustion_updated_at: string
           id: string
           level: number
           skill_points: number
@@ -441,10 +482,12 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          class_changed_at?: string | null
+          class_type?: Database["public"]["Enums"]["character_class"] | null
           coins?: number
           created_at?: string
-          fatigue?: number
-          fatigue_updated_at?: string
+          exhaustion?: number
+          exhaustion_updated_at?: string
           id?: string
           level?: number
           skill_points?: number
@@ -456,10 +499,12 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          class_changed_at?: string | null
+          class_type?: Database["public"]["Enums"]["character_class"] | null
           coins?: number
           created_at?: string
-          fatigue?: number
-          fatigue_updated_at?: string
+          exhaustion?: number
+          exhaustion_updated_at?: string
           id?: string
           level?: number
           skill_points?: number
@@ -800,6 +845,45 @@ export type Database = {
           },
         ]
       }
+      user_status_effects: {
+        Row: {
+          active: boolean
+          created_at: string
+          difficulty_modifier: number
+          expires_at: string
+          id: string
+          kind: Database["public"]["Enums"]["status_effect_kind"]
+          multiplier: number
+          reason: string | null
+          starts_at: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          difficulty_modifier?: number
+          expires_at: string
+          id?: string
+          kind: Database["public"]["Enums"]["status_effect_kind"]
+          multiplier?: number
+          reason?: string | null
+          starts_at?: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          difficulty_modifier?: number
+          expires_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["status_effect_kind"]
+          multiplier?: number
+          reason?: string | null
+          starts_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_leaderboard_rewards: {
         Row: {
           coins_awarded: number
@@ -874,12 +958,17 @@ export type Database = {
         Returns: Json
       }
       create_party: { Args: { p_name: string }; Returns: Json }
+      evaluate_status_effects: { Args: { p_user?: string }; Returns: Json }
       expire_active_effects: { Args: never; Returns: Json }
       generate_epic_options: { Args: never; Returns: Json }
       generate_quests: { Args: { p_force?: boolean }; Returns: Json }
       generate_weekly_options: { Args: never; Returns: Json }
       get_active_xp_multiplier: { Args: { p_user: string }; Returns: number }
       get_behavior_profile: { Args: never; Returns: Json }
+      get_class_xp_multiplier: {
+        Args: { p_type: string; p_user: string }
+        Returns: number
+      }
       get_fatigue_multiplier: { Args: { p_fatigue: number }; Returns: number }
       get_repeat_multiplier: {
         Args: { p_subtype: string; p_type: string; p_user: string }
@@ -889,6 +978,11 @@ export type Database = {
         Args: { p_type: string; p_user: string }
         Returns: number
       }
+      get_status_difficulty_modifier: {
+        Args: { p_user: string }
+        Returns: number
+      }
+      get_status_xp_multiplier: { Args: { p_user: string }; Returns: number }
       get_streak_skill_bonus: { Args: { p_user: string }; Returns: number }
       insert_dynamic_quest: {
         Args: {
@@ -951,6 +1045,13 @@ export type Database = {
         Returns: Json
       }
       seed_compulsory_quests: { Args: never; Returns: Json }
+      select_character_class: {
+        Args: {
+          p_class: Database["public"]["Enums"]["character_class"]
+          p_pay_to_skip?: boolean
+        }
+        Returns: Json
+      }
       select_quest_option: { Args: { p_quest_id: string }; Returns: Json }
       send_friend_request: { Args: { p_username: string }; Returns: Json }
       set_party_goal: {
@@ -968,6 +1069,7 @@ export type Database = {
     }
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
+      character_class: "scholar" | "warrior" | "creator" | "leader"
       friendship_status: "pending" | "accepted" | "blocked"
       party_role: "leader" | "member"
       quest_energy: "low" | "medium" | "high"
@@ -981,6 +1083,7 @@ export type Database = {
         | "discarded"
       quest_type: "daily" | "weekly" | "epic" | "dynamic"
       stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
+      status_effect_kind: "burnout" | "flow_state" | "fatigue"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1109,6 +1212,7 @@ export const Constants = {
   public: {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
+      character_class: ["scholar", "warrior", "creator", "leader"],
       friendship_status: ["pending", "accepted", "blocked"],
       party_role: ["leader", "member"],
       quest_energy: ["low", "medium", "high"],
@@ -1123,6 +1227,7 @@ export const Constants = {
       ],
       quest_type: ["daily", "weekly", "epic", "dynamic"],
       stat_kind: ["intelligence", "strength", "discipline", "charisma"],
+      status_effect_kind: ["burnout", "flow_state", "fatigue"],
     },
   },
 } as const
