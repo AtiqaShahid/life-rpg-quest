@@ -53,24 +53,12 @@ export default function Dashboard() {
   const { user } = useAuth();
   const social = useSocial();
 
-  if (p.loading || !p.profile || !p.stats || !p.streak) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
-        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your save…
-      </div>
-    );
-  }
-
-  // ---- Pending quests only ----
-  const pendingQuests = (p.quests as QuestRich[]).filter((q) => {
-    if (q.completed) return false;
-    const status = q.status;
-    return !status || status === "active" || status === "locked";
-  });
-
   // ---- Today's activities ----
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todaysActivities = p.activities.filter(a => a.activity_date === todayStr || a.created_at.slice(0, 10) === todayStr);
+  const todaysActivities = useMemo(
+    () => p.activities.filter(a => a.activity_date === todayStr || a.created_at.slice(0, 10) === todayStr),
+    [p.activities, todayStr],
+  );
 
   // ---- Hourly XP chart for today ----
   const hourlyChart = useMemo(() => {
@@ -85,6 +73,21 @@ export default function Dashboard() {
     const nowHour = new Date().getHours();
     return buckets.slice(0, Math.max(nowHour + 1, 6));
   }, [todaysActivities]);
+
+  if (p.loading || !p.profile || !p.stats || !p.streak) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
+        <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading your save…
+      </div>
+    );
+  }
+
+  // ---- Pending quests only ----
+  const pendingQuests = (p.quests as QuestRich[]).filter((q) => {
+    if (q.completed) return false;
+    const status = q.status;
+    return !status || status === "active" || status === "locked";
+  });
 
   const todayXp = todaysActivities.reduce((s, a) => s + a.xp_gained, 0);
   const todayCount = todaysActivities.length;
