@@ -405,6 +405,36 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          content: string
+          created_at: string
+          expires_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          type: Database["public"]["Enums"]["dm_type"]
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          type?: Database["public"]["Enums"]["dm_type"]
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          type?: Database["public"]["Enums"]["dm_type"]
+        }
+        Relationships: []
+      }
       event_history: {
         Row: {
           awarded_coins: number
@@ -1445,7 +1475,9 @@ export type Database = {
         }
         Returns: Json
       }
+      are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
       claim_event_rewards: { Args: { p_event: string }; Returns: Json }
+      cleanup_expired_messages: { Args: never; Returns: undefined }
       cleanup_orphan_quests: { Args: never; Returns: Json }
       complete_quest: { Args: { p_quest_id: string }; Returns: Json }
       compute_activity_xp: {
@@ -1475,6 +1507,18 @@ export type Database = {
       get_class_xp_multiplier: {
         Args: { p_type: string; p_user: string }
         Returns: number
+      }
+      get_conversation: {
+        Args: { p_limit?: number; p_other: string }
+        Returns: {
+          content: string
+          created_at: string
+          expires_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          type: Database["public"]["Enums"]["dm_type"]
+        }[]
       }
       get_depth_dashboard: { Args: never; Returns: Json }
       get_event_dashboard: { Args: never; Returns: Json }
@@ -1591,6 +1635,14 @@ export type Database = {
         Returns: Json
       }
       select_quest_option: { Args: { p_quest_id: string }; Returns: Json }
+      send_direct_message: {
+        Args: {
+          p_content: string
+          p_receiver: string
+          p_type?: Database["public"]["Enums"]["dm_type"]
+        }
+        Returns: Json
+      }
       send_friend_request: { Args: { p_username: string }; Returns: Json }
       set_party_goal: {
         Args: { p_metric: string; p_target: number; p_title: string }
@@ -1609,6 +1661,7 @@ export type Database = {
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
       character_class: "scholar" | "warrior" | "creator" | "leader"
+      dm_type: "text" | "image"
       event_scope: "weekly" | "seasonal" | "global"
       event_status: "upcoming" | "active" | "completed" | "expired"
       friendship_status: "pending" | "accepted" | "blocked"
@@ -1760,6 +1813,7 @@ export const Constants = {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
       character_class: ["scholar", "warrior", "creator", "leader"],
+      dm_type: ["text", "image"],
       event_scope: ["weekly", "seasonal", "global"],
       event_status: ["upcoming", "active", "completed", "expired"],
       friendship_status: ["pending", "accepted", "blocked"],
