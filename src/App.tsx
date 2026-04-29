@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/rpg/AppLayout";
 import { PlayerProvider } from "@/hooks/usePlayer";
 import { SocialProvider } from "@/hooks/useSocial";
+// hmr-refresh: social-provider
 import { CustomCursor } from "@/components/rpg/CustomCursor";
 import { useEffect } from "react";
 import { installUiSounds } from "@/lib/uiSound";
