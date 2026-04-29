@@ -3,7 +3,8 @@ import { useSocial, type UserSearchResult } from "@/hooks/useSocial";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, Clock, Search, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { Check, Clock, MessageCircle, Search, UserMinus, UserPlus, Users, X } from "lucide-react";
+import { Link } from "react-router-dom";
 
 function initials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -201,9 +202,16 @@ export default function FriendsPage() {
                     <div className="text-[11px] text-secondary">Lv {f.other_level} · Friend</div>
                   </div>
                 </div>
-                <Button size="icon" variant="ghost" className="shrink-0" onClick={() => s.removeFriend(f.other_user_id)} title="Remove friend">
-                  <UserMinus className="h-4 w-4 text-destructive" />
-                </Button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <Button size="icon" variant="ghost" asChild title="Chat">
+                    <Link to={`/app/friends/chat/${f.other_user_id}`}>
+                      <MessageCircle className="h-4 w-4 text-primary" />
+                    </Link>
+                  </Button>
+                  <Button size="icon" variant="ghost" onClick={() => s.removeFriend(f.other_user_id)} title="Remove friend">
+                    <UserMinus className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </div>
             ))}
           </div>

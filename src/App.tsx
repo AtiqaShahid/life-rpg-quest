@@ -26,6 +26,7 @@ import Settings from "./pages/app/Settings";
 import Shop from "./pages/app/Shop";
 import PartyPage from "./pages/app/Party";
 import FriendsPage from "./pages/app/Friends";
+import ChatPage from "./pages/app/Chat";
 import LeaderboardPage from "./pages/app/Leaderboard";
 import Analytics from "./pages/app/Analytics";
 import Events from "./pages/app/Events";
@@ -68,6 +69,7 @@ const App = () => {
               <Route path="shop" element={<Shop />} />
               <Route path="party" element={<PartyPage />} />
               <Route path="friends" element={<FriendsPage />} />
+              <Route path="friends/chat/:friendId" element={<ChatPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="events" element={<Events />} />
