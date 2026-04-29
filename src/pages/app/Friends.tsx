@@ -130,22 +130,23 @@ export default function FriendsPage() {
           <h2 className="mb-2 font-semibold">Friend requests ({incoming.length})</h2>
           <div className="grid gap-2 sm:grid-cols-2">
             {incoming.map((f) => (
-              <div key={f.id} className="glass flex items-center justify-between gap-3 rounded-xl p-3">
+              <div key={f.id} className="glass flex flex-col gap-3 rounded-xl p-3">
                 <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="h-9 w-9 ring-1 ring-accent/50">
+                  <Avatar className="h-10 w-10 shrink-0 ring-1 ring-accent/50">
+                    {f.other_avatar_url && <AvatarImage src={f.other_avatar_url} alt={f.other_username} />}
                     <AvatarFallback>{initials(f.other_username)}</AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{f.other_username}</div>
-                    <div className="text-[11px] text-muted-foreground">wants to be friends</div>
+                    <div className="text-[11px] text-muted-foreground">Lv {f.other_level} · wants to be friends</div>
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <Button size="sm" onClick={() => s.respondFriend(f.id, true)}>
+                <div className="flex gap-2">
+                  <Button size="sm" className="flex-1" onClick={() => s.respondFriend(f.id, true)}>
                     <Check className="mr-1 h-4 w-4" /> Accept
                   </Button>
-                  <Button size="icon" variant="ghost" onClick={() => s.respondFriend(f.id, false)}>
-                    <X className="h-4 w-4 text-destructive" />
+                  <Button size="sm" variant="ghost" onClick={() => s.respondFriend(f.id, false)}>
+                    <X className="mr-1 h-4 w-4 text-destructive" /> Reject
                   </Button>
                 </div>
               </div>
@@ -161,13 +162,14 @@ export default function FriendsPage() {
           <div className="grid gap-2 sm:grid-cols-2">
             {outgoing.map((f) => (
               <div key={f.id} className="glass flex items-center justify-between gap-3 rounded-xl p-3">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="h-9 w-9">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Avatar className="h-9 w-9 shrink-0">
+                    {f.other_avatar_url && <AvatarImage src={f.other_avatar_url} alt={f.other_username} />}
                     <AvatarFallback>{initials(f.other_username)}</AvatarFallback>
                   </Avatar>
                   <span className="truncate text-sm">{f.other_username}</span>
                 </div>
-                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">
                   <Clock className="h-3.5 w-3.5" /> Awaiting
                 </span>
               </div>
@@ -189,16 +191,17 @@ export default function FriendsPage() {
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {accepted.map((f) => (
               <div key={f.id} className="glass group flex items-center justify-between gap-3 rounded-xl p-3 transition-all hover:border-primary/40 hover:shadow-lg">
-                <div className="flex min-w-0 items-center gap-3">
-                  <Avatar className="h-10 w-10 ring-1 ring-secondary/50">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <Avatar className="h-10 w-10 shrink-0 ring-1 ring-secondary/50">
+                    {f.other_avatar_url && <AvatarImage src={f.other_avatar_url} alt={f.other_username} />}
                     <AvatarFallback>{initials(f.other_username)}</AvatarFallback>
                   </Avatar>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium">{f.other_username}</div>
-                    <div className="text-[11px] text-secondary">Friend</div>
+                    <div className="text-[11px] text-secondary">Lv {f.other_level} · Friend</div>
                   </div>
                 </div>
-                <Button size="icon" variant="ghost" onClick={() => s.removeFriend(f.other_user_id)} title="Remove friend">
+                <Button size="icon" variant="ghost" className="shrink-0" onClick={() => s.removeFriend(f.other_user_id)} title="Remove friend">
                   <UserMinus className="h-4 w-4 text-destructive" />
                 </Button>
               </div>

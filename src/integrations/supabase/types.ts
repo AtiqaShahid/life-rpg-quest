@@ -1480,6 +1480,15 @@ export type Database = {
       get_event_dashboard: { Args: never; Returns: Json }
       get_fatigue_multiplier: { Args: { p_fatigue: number }; Returns: number }
       get_life_score: { Args: never; Returns: Json }
+      get_public_profiles: {
+        Args: { p_user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          level: number
+          user_id: string
+          username: string
+        }[]
+      }
       get_repeat_multiplier: {
         Args: { p_subtype: string; p_type: string; p_user: string }
         Returns: number
