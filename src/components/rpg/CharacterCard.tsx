@@ -5,6 +5,8 @@ import { StatBadge } from "./StatBadge";
 import { Profile, Stats, Streak } from "@/hooks/usePlayer";
 import { Flame, Sparkles } from "lucide-react";
 import { xpToNext } from "@/lib/rpg";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { Link } from "react-router-dom";
 
 type Props = {
   profile: Profile;
@@ -16,6 +18,7 @@ type Props = {
 
 export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }: Props) => {
   const [showLevelUp, setShowLevelUp] = useState<number | null>(null);
+  const { total: unread } = useUnreadMessages();
   useEffect(() => {
     if (!levelUpFlash) return;
     setShowLevelUp(levelUpFlash.to);
@@ -76,6 +79,16 @@ export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }:
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gradient-primary px-3 py-0.5 font-display text-xs sm:text-sm font-bold text-primary-foreground shadow-glow-primary">
             LV {profile.level}
           </div>
+          {/* Unread messages badge */}
+          {unread > 0 && (
+            <Link
+              to="/app/friends"
+              title={`${unread} unread message${unread === 1 ? "" : "s"}`}
+              className="absolute right-0 top-0 z-10 flex h-7 min-w-[1.75rem] items-center justify-center rounded-full bg-emerald-500 px-1.5 font-display text-[11px] font-bold text-white shadow-[0_0_12px_hsl(142_76%_45%/0.7)] ring-2 ring-background animate-pulse hover:scale-110 transition-transform"
+            >
+              {unread > 9 ? "9+" : unread}
+            </Link>
+          )}
           {/* Level-up flash */}
           {showLevelUp != null && (
             <div className="pointer-events-none absolute inset-0 -m-8 rounded-full border-2 border-accent animate-level-up" />
