@@ -59,6 +59,14 @@ export interface FriendRow {
   direction: "incoming" | "outgoing" | "friend";
 }
 
+export interface UserSearchResult {
+  user_id: string;
+  username: string;
+  avatar_url: string | null;
+  level: number;
+  friendship_status: "none" | "friend" | "pending_outgoing" | "pending_incoming" | "blocked";
+}
+
 function useSocialInternal() {
   const { user } = useAuth();
   const player = usePlayer();
@@ -249,10 +257,19 @@ function useSocialInternal() {
     await loadFriends();
   }, [loadFriends]);
 
+  const searchUsers = useCallback(async (query: string): Promise<UserSearchResult[]> => {
+    const q = query.trim();
+    if (!q) return [];
+    const { data, error } = await supabase.rpc("search_users", { p_query: q, p_limit: 10 });
+    if (error) { toast.error(error.message); return []; }
+    return (data ?? []) as UserSearchResult[];
+  }, []);
+
   return {
     loading, party, members, goal, friends, leaderboard, scope, setScope,
     createParty, joinParty, leaveParty, kickMember, updatePartySettings, setPartyGoal,
-    sendFriendRequest, respondFriend, removeFriend, refreshLeaderboard: () => syncMyLeaderboard().then(() => loadLeaderboard(scope)),
+    sendFriendRequest, respondFriend, removeFriend, searchUsers,
+    refreshLeaderboard: () => syncMyLeaderboard().then(() => loadLeaderboard(scope)),
   };
 }
 
