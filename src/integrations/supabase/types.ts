@@ -1563,6 +1563,16 @@ export type Database = {
         Returns: Json
       }
       roll_weekly_events_for_user: { Args: { p_user?: string }; Returns: Json }
+      search_users: {
+        Args: { p_limit?: number; p_query: string }
+        Returns: {
+          avatar_url: string
+          friendship_status: string
+          level: number
+          user_id: string
+          username: string
+        }[]
+      }
       seed_compulsory_quests: { Args: never; Returns: Json }
       select_character_class: {
         Args: {
