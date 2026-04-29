@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout } from "@/components/rpg/AppLayout";
 import { PlayerProvider } from "@/hooks/usePlayer";
 import { SocialProvider } from "@/hooks/useSocial";
+import { UnreadMessagesProvider } from "@/hooks/useUnreadMessages";
 // hmr-refresh: social-provider
 import { CustomCursor } from "@/components/rpg/CustomCursor";
 import { useEffect } from "react";
@@ -47,6 +48,7 @@ const App = () => {
         <AuthProvider>
           <PlayerProvider>
             <SocialProvider>
+            <UnreadMessagesProvider>
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
@@ -79,6 +81,7 @@ const App = () => {
 
             <Route path="*" element={<NotFound />} />
             </Routes>
+            </UnreadMessagesProvider>
             </SocialProvider>
           </PlayerProvider>
         </AuthProvider>
