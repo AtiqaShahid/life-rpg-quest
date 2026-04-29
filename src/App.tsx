@@ -68,6 +68,7 @@ const App = () => {
               <Route path="shop" element={<Shop />} />
               <Route path="party" element={<PartyPage />} />
               <Route path="friends" element={<FriendsPage />} />
+              <Route path="friends/chat/:friendId" element={<ChatPage />} />
               <Route path="leaderboard" element={<LeaderboardPage />} />
               <Route path="analytics" element={<Analytics />} />
               <Route path="events" element={<Events />} />
