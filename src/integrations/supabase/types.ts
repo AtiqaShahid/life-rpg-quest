@@ -409,28 +409,37 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          delivered_at: string | null
           expires_at: string
           id: string
           receiver_id: string
+          seen_at: string | null
           sender_id: string
+          status: Database["public"]["Enums"]["dm_status"]
           type: Database["public"]["Enums"]["dm_type"]
         }
         Insert: {
           content: string
           created_at?: string
+          delivered_at?: string | null
           expires_at?: string
           id?: string
           receiver_id: string
+          seen_at?: string | null
           sender_id: string
+          status?: Database["public"]["Enums"]["dm_status"]
           type?: Database["public"]["Enums"]["dm_type"]
         }
         Update: {
           content?: string
           created_at?: string
+          delivered_at?: string | null
           expires_at?: string
           id?: string
           receiver_id?: string
+          seen_at?: string | null
           sender_id?: string
+          status?: Database["public"]["Enums"]["dm_status"]
           type?: Database["public"]["Enums"]["dm_type"]
         }
         Relationships: []
@@ -1513,10 +1522,13 @@ export type Database = {
         Returns: {
           content: string
           created_at: string
+          delivered_at: string
           expires_at: string
           id: string
           receiver_id: string
+          seen_at: string
           sender_id: string
+          status: Database["public"]["Enums"]["dm_status"]
           type: Database["public"]["Enums"]["dm_type"]
         }[]
       }
@@ -1595,6 +1607,8 @@ export type Database = {
             }
             Returns: Json
           }
+      mark_messages_delivered: { Args: { p_sender: string }; Returns: number }
+      mark_messages_seen: { Args: { p_sender: string }; Returns: number }
       purchase_shop_item: {
         Args: { p_item_id: string; p_quantity?: number }
         Returns: Json
@@ -1661,6 +1675,7 @@ export type Database = {
     Enums: {
       activity_difficulty: "easy" | "medium" | "hard"
       character_class: "scholar" | "warrior" | "creator" | "leader"
+      dm_status: "sent" | "delivered" | "seen"
       dm_type: "text" | "image"
       event_scope: "weekly" | "seasonal" | "global"
       event_status: "upcoming" | "active" | "completed" | "expired"
@@ -1813,6 +1828,7 @@ export const Constants = {
     Enums: {
       activity_difficulty: ["easy", "medium", "hard"],
       character_class: ["scholar", "warrior", "creator", "leader"],
+      dm_status: ["sent", "delivered", "seen"],
       dm_type: ["text", "image"],
       event_scope: ["weekly", "seasonal", "global"],
       event_status: ["upcoming", "active", "completed", "expired"],
