@@ -56,6 +56,8 @@ export interface FriendRow {
   status: "pending" | "accepted" | "blocked";
   other_user_id: string;
   other_username: string;
+  other_avatar_url: string | null;
+  other_level: number;
   direction: "incoming" | "outgoing" | "friend";
 }
 
@@ -110,15 +112,25 @@ function useSocialInternal() {
     const rows = (data ?? []) as Array<{ id: string; requester_id: string; addressee_id: string; status: "pending" | "accepted" | "blocked" }>;
     const otherIds = Array.from(new Set(rows.map((r) => r.requester_id === user.id ? r.addressee_id : r.requester_id)));
     const { data: profs } = otherIds.length
-      ? await supabase.from("profiles").select("user_id, username").in("user_id", otherIds)
-      : { data: [] as Array<{ user_id: string; username: string }> };
-    const nameMap = new Map((profs ?? []).map((p) => [p.user_id, p.username]));
+      ? await supabase.rpc("get_public_profiles", { p_user_ids: otherIds })
+      : { data: [] as Array<{ user_id: string; username: string; avatar_url: string | null; level: number }> };
+    const profMap = new Map(
+      (profs ?? []).map((p: { user_id: string; username: string; avatar_url: string | null; level: number }) => [p.user_id, p]),
+    );
     setFriends(rows.map((r) => {
       const otherId = r.requester_id === user.id ? r.addressee_id : r.requester_id;
       const direction: FriendRow["direction"] = r.status === "accepted"
         ? "friend"
         : (r.requester_id === user.id ? "outgoing" : "incoming");
-      return { ...r, other_user_id: otherId, other_username: nameMap.get(otherId) ?? "Player", direction };
+      const prof = profMap.get(otherId);
+      return {
+        ...r,
+        other_user_id: otherId,
+        other_username: prof?.username ?? "Player",
+        other_avatar_url: prof?.avatar_url ?? null,
+        other_level: prof?.level ?? 1,
+        direction,
+      };
     }));
   }, [user]);
 
