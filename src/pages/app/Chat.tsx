@@ -6,7 +6,7 @@ import { useChat } from "@/hooks/useChat";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Image as ImageIcon, Send, X } from "lucide-react";
+import { ArrowLeft, Check, CheckCheck, Image as ImageIcon, Send, X } from "lucide-react";
 
 function initials(name: string) { return name.slice(0, 2).toUpperCase(); }
 function formatTime(iso: string) {
@@ -31,7 +31,19 @@ export default function ChatPage() {
     [friends, friendId],
   );
 
-  const { messages, loading, sending, sendText, sendImage } = useChat(friend?.other_user_id ?? null);
+  const [tabVisible, setTabVisible] = useState<boolean>(
+    typeof document === "undefined" ? true : document.visibilityState === "visible",
+  );
+  useEffect(() => {
+    const onVis = () => setTabVisible(document.visibilityState === "visible");
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, []);
+
+  const { messages, loading, sending, sendText, sendImage } = useChat(
+    friend?.other_user_id ?? null,
+    { active: tabVisible },
+  );
   const [text, setText] = useState("");
   const [preview, setPreview] = useState<{ file: File; url: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -126,6 +138,13 @@ export default function ChatPage() {
                   <div className={`mt-1 flex items-center gap-2 text-[10px] ${mine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
                     <span>{formatTime(m.created_at)}</span>
                     <span>· {timeLeft(m.expires_at)} left</span>
+                    {mine && (
+                      <span className="ml-1 inline-flex items-center" title={m.status}>
+                        {m.status === "sent" && <Check className="h-3 w-3" />}
+                        {m.status === "delivered" && <CheckCheck className="h-3 w-3 opacity-70" />}
+                        {m.status === "seen" && <CheckCheck className="h-3 w-3 text-secondary" />}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

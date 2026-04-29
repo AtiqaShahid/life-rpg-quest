@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 
 export type DMType = "text" | "image";
+export type DMStatus = "sent" | "delivered" | "seen";
 
 export interface DirectMessage {
   id: string;
@@ -11,16 +12,30 @@ export interface DirectMessage {
   receiver_id: string;
   content: string;
   type: DMType;
+  status: DMStatus;
+  delivered_at: string | null;
+  seen_at: string | null;
   created_at: string;
   expires_at: string;
 }
 
-export function useChat(otherUserId: string | null) {
+export function useChat(otherUserId: string | null, opts?: { active?: boolean }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const seen = useRef<Set<string>>(new Set());
+  const active = opts?.active ?? true;
+
+  const markDelivered = useCallback(async () => {
+    if (!user || !otherUserId) return;
+    await supabase.rpc("mark_messages_delivered", { p_sender: otherUserId });
+  }, [user, otherUserId]);
+
+  const markSeen = useCallback(async () => {
+    if (!user || !otherUserId) return;
+    await supabase.rpc("mark_messages_seen", { p_sender: otherUserId });
+  }, [user, otherUserId]);
 
   const load = useCallback(async () => {
     if (!user || !otherUserId) return;
@@ -34,6 +49,8 @@ export function useChat(otherUserId: string | null) {
     seen.current = new Set(rows.map((m) => m.id));
     setMessages(rows);
     setLoading(false);
+    // Loading the chat = delivered. If active/visible = seen.
+    if (active) await markSeen(); else await markDelivered();
   }, [user, otherUserId]);
 
   useEffect(() => { load(); }, [load]);
@@ -64,6 +81,22 @@ export function useChat(otherUserId: string | null) {
           if (seen.current.has(m.id)) return;
           seen.current.add(m.id);
           setMessages((prev) => [...prev, m]);
+          // Incoming message while chat is open → mark seen; otherwise delivered
+          if (m.receiver_id === user.id) {
+            if (active) markSeen(); else markDelivered();
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "direct_messages" },
+        (payload) => {
+          const m = payload.new as DirectMessage;
+          const involvesPair =
+            (m.sender_id === user.id && m.receiver_id === otherUserId) ||
+            (m.sender_id === otherUserId && m.receiver_id === user.id);
+          if (!involvesPair) return;
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
         },
       )
       .on(
@@ -78,7 +111,12 @@ export function useChat(otherUserId: string | null) {
       )
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user, otherUserId]);
+  }, [user, otherUserId, active, markDelivered, markSeen]);
+
+  // Re-mark seen whenever the chat becomes active (tab focus, route open)
+  useEffect(() => {
+    if (active) markSeen();
+  }, [active, markSeen, messages.length]);
 
   const sendText = useCallback(async (text: string) => {
     if (!user || !otherUserId) return;
@@ -124,5 +162,5 @@ export function useChat(otherUserId: string | null) {
     }
   }, [user, otherUserId]);
 
-  return { messages, loading, sending, sendText, sendImage, reload: load };
+  return { messages, loading, sending, sendText, sendImage, reload: load, markSeen };
 }
