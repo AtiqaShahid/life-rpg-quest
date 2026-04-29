@@ -1,4 +1,4 @@
-import { Link, Navigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Gamepad2, Zap, Trophy, Flame, ChevronRight } from "lucide-react";
 import heroAvatar from "@/assets/hero-avatar.png";
 import { useAuth } from "@/context/AuthContext";
@@ -10,8 +10,7 @@ const features = [
 ];
 
 export default function Landing() {
-  const { user, loading } = useAuth();
-  if (!loading && user) return <Navigate to="/app" replace />;
+  const { user } = useAuth();
 
   return (
     <div className="relative min-h-screen overflow-hidden">
@@ -28,9 +27,15 @@ export default function Landing() {
           </div>
           <span className="font-display text-lg font-bold neon-text-primary">LIFE RPG</span>
         </div>
-        <Link to="/auth" className="rounded-full glass px-4 py-2 text-sm font-medium hover:shadow-glow-primary transition-all">
-          Sign in
-        </Link>
+        {user ? (
+          <Link to="/app" className="rounded-full glass px-4 py-2 text-sm font-medium hover:shadow-glow-primary transition-all">
+            Enter game
+          </Link>
+        ) : (
+          <Link to="/auth" className="rounded-full glass px-4 py-2 text-sm font-medium hover:shadow-glow-primary transition-all">
+            Sign in
+          </Link>
+        )}
       </header>
 
       {/* Hero */}
