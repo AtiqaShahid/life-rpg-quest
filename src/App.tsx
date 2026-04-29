@@ -26,6 +26,7 @@ import Settings from "./pages/app/Settings";
 import Shop from "./pages/app/Shop";
 import PartyPage from "./pages/app/Party";
 import FriendsPage from "./pages/app/Friends";
+import ChatPage from "./pages/app/Chat";
 import LeaderboardPage from "./pages/app/Leaderboard";
 import Analytics from "./pages/app/Analytics";
 import Events from "./pages/app/Events";
