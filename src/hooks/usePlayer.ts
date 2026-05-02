@@ -857,6 +857,7 @@ function usePlayerInternal() {
     regenerateDailySlot, regenerateAllDailySlots,
     lockQuest, unlockQuest,
     generateWeeklyOptions, generateEpicOptions, selectQuestOption,
+    activeTimedQuest, startQuest, pauseQuest, resumeQuest, abandonQuest,
   };
 }
 
