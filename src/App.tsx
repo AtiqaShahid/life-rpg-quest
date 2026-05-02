@@ -9,7 +9,7 @@ import { AppLayout } from "@/components/rpg/AppLayout";
 import { PlayerProvider } from "@/hooks/usePlayer";
 import { SocialProvider } from "@/hooks/useSocial";
 import { UnreadMessagesProvider } from "@/hooks/useUnreadMessages";
-// hmr-refresh: social-provider
+// hmr-refresh: player-provider-2
 import { CustomCursor } from "@/components/rpg/CustomCursor";
 import { useEffect } from "react";
 import { installUiSounds } from "@/lib/uiSound";
