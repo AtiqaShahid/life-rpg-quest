@@ -1603,6 +1603,15 @@ export type Database = {
         Args: { _party_id: string; _user_id: string }
         Returns: boolean
       }
+      is_quest_timer_valid: {
+        Args: {
+          p_completed_at: string
+          p_duration_minutes: number
+          p_ends_at: string
+          p_started_at: string
+        }
+        Returns: boolean
+      }
       join_event: { Args: { p_event: string }; Returns: Json }
       join_party: { Args: { p_invite_code: string }; Returns: Json }
       join_seasonal_template: { Args: { p_template: string }; Returns: Json }
