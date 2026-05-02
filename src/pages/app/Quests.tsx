@@ -129,6 +129,16 @@ export default function Quests() {
 
   return (
     <div className="space-y-8">
+      {p.activeTimedQuest && (
+        <div className="glass-strong sticky top-2 z-30 flex items-center gap-3 rounded-2xl p-3 ring-2 ring-primary/40 shadow-glow-primary">
+          <Loader2 className="h-4 w-4 animate-pulse text-primary" />
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-[10px] tracking-widest text-secondary">FOCUS LOCK</div>
+            <div className="truncate font-display text-sm font-semibold">{p.activeTimedQuest.title}</div>
+          </div>
+          <span className="font-mono text-[11px] text-muted-foreground">other quests are locked</span>
+        </div>
+      )}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 font-mono text-[11px] tracking-widest text-secondary"><Scroll className="h-3.5 w-3.5" /> QUEST BOARD</div>
