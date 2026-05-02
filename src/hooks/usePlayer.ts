@@ -105,7 +105,7 @@ export type Quest = { id: string; user_id: string; title: string; reward_xp: num
 
 export type QuestType = "daily" | "weekly" | "epic" | "dynamic";
 export type QuestEnergy = "low" | "medium" | "high";
-export type QuestStatus = "active" | "locked" | "candidate" | "discarded" | "completed" | "failed" | "paused";
+export type QuestStatus = "active" | "locked" | "candidate" | "discarded" | "completed" | "failed" | "paused" | "in_progress";
 export type QuestCriteria = { type_id?: string | string[]; min_duration?: number; min_difficulty?: string };
 
 export type QuestRich = Quest & {
@@ -122,6 +122,12 @@ export type QuestRich = Quest & {
   is_compulsory: boolean;
   slot_index: number | null;
   selection_group: string | null;
+  duration_minutes: number | null;
+  started_at: string | null;
+  ends_at: string | null;
+  paused_at: string | null;
+  pauses_used: number;
+  timer_penalty: number;
 };
 
 export type QuestProgress = {
