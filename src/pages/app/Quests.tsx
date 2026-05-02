@@ -24,16 +24,17 @@ export default function Quests() {
 
   const buckets = useMemo(() => {
     const dailyAll = all.filter(q => (q.quest_type ?? (q.is_daily ? "daily" : "dynamic")) === "daily" && visible(q));
+    const isRunningStatus = (s: string) => s === "active" || s === "locked" || s === "in_progress" || s === "paused";
     return {
       dailyCompulsory: dailyAll.filter(q => q.is_compulsory).sort((a,b) => a.title.localeCompare(b.title)),
       dailySlots: [1,2,3].map(slot => dailyAll.find(q => !q.is_compulsory && q.slot_index === slot) ?? null),
       dailyCustom: dailyAll.filter(q => !q.is_compulsory && q.slot_index === null && q.generation_reason === "custom_user"),
-      weeklyActive: all.filter(q => q.quest_type === "weekly" && (q.status === "active" || q.status === "locked") && visible(q)),
+      weeklyActive: all.filter(q => q.quest_type === "weekly" && isRunningStatus(q.status) && visible(q)),
       weeklyCandidates: all.filter(q => q.quest_type === "weekly" && q.status === "candidate"),
-      epicActive: all.filter(q => q.quest_type === "epic" && (q.status === "active" || q.status === "locked") && visible(q)),
+      epicActive: all.filter(q => q.quest_type === "epic" && isRunningStatus(q.status) && visible(q)),
       epicCandidates: all.filter(q => q.quest_type === "epic" && q.status === "candidate"),
       dynamicCandidates: all.filter(q => q.quest_type === "dynamic" && q.status === "candidate"),
-      dynamicActive: all.filter(q => q.quest_type === "dynamic" && (q.status === "active" || q.status === "locked") && visible(q)),
+      dynamicActive: all.filter(q => q.quest_type === "dynamic" && isRunningStatus(q.status) && visible(q)),
       completed: all.filter(q => q.status === "completed" || q.completed),
     };
   }, [all]);
@@ -62,6 +63,20 @@ export default function Quests() {
   const genWeekly = async () => { setBusy("weekly"); await p.generateWeeklyOptions(); setBusy("none"); };
   const genEpic   = async () => { setBusy("epic");   await p.generateEpicOptions();   setBusy("none"); };
 
+  const runningId = p.activeTimedQuest?.id ?? null;
+  const isLockedGlobally = !!runningId;
+
+  const cardProps = (q: QuestRich) => ({
+    quest: q,
+    progress: progressByQuest.get(q.id),
+    onComplete: p.completeQuest,
+    onStart: p.startQuest,
+    onPause: p.pauseQuest,
+    onResume: p.resumeQuest,
+    onAbandon: p.abandonQuest,
+    globallyLocked: isLockedGlobally && q.id !== runningId,
+  });
+
   const renderList = (list: QuestRich[], emptyHint = "No quests here.") => (
     <div className="space-y-2">
       {list.length === 0 && (
@@ -70,9 +85,7 @@ export default function Quests() {
       {list.map(q => (
         <QuestCard
           key={q.id}
-          quest={q}
-          progress={progressByQuest.get(q.id)}
-          onComplete={p.completeQuest}
+          {...cardProps(q)}
           onRemove={p.removeQuest}
           onLock={p.lockQuest}
           onUnlock={p.unlockQuest}
