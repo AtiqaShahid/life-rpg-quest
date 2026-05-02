@@ -104,7 +104,7 @@ export default function Quests() {
             <div className="font-mono text-[10px] tracking-widest text-muted-foreground">SLOT {slot}</div>
             <div className="mt-1 text-sm text-muted-foreground">Empty — generate a dynamic quest.</div>
           </div>
-          <button onClick={() => regenSlot(slot)} disabled={busy !== "none"}
+          <button onClick={() => regenSlot(slot)} disabled={busy !== "none" || isLockedGlobally}
             className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-primary px-3 py-2 font-display text-xs font-semibold text-primary-foreground shadow-glow-primary disabled:opacity-60">
             {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Generate
           </button>
@@ -118,9 +118,7 @@ export default function Quests() {
           {isBusy && <Loader2 className="h-3 w-3 animate-spin" />}
         </div>
         <QuestCard
-          quest={q}
-          progress={progressByQuest.get(q.id)}
-          onComplete={p.completeQuest}
+          {...cardProps(q)}
           onLock={p.lockQuest}
           onUnlock={p.unlockQuest}
           onRegenerate={() => regenSlot(slot)}
@@ -140,7 +138,8 @@ export default function Quests() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={refreshAllDaily}
-            disabled={busy !== "none"}
+            disabled={busy !== "none" || isLockedGlobally}
+            title={isLockedGlobally ? "Finish your active quest first" : ""}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/40 px-3 py-2 font-display text-sm font-medium transition-colors hover:bg-muted/60 disabled:opacity-60"
           >
             {busy === "refresh-all" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -148,7 +147,8 @@ export default function Quests() {
           </button>
           <button
             onClick={askAI}
-            disabled={busy !== "none"}
+            disabled={busy !== "none" || isLockedGlobally}
+            title={isLockedGlobally ? "Finish your active quest first" : ""}
             className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-primary px-3 py-2 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-[1.02] disabled:opacity-60"
           >
             {busy === "ai" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
@@ -254,9 +254,7 @@ export default function Quests() {
                 {buckets.weeklyActive.map(q => (
                   <QuestCard
                     key={q.id}
-                    quest={q}
-                    progress={progressByQuest.get(q.id)}
-                    onComplete={p.completeQuest}
+                    {...cardProps(q)}
                     onRemove={p.removeQuest}
                     onLock={p.lockQuest}
                     onUnlock={p.unlockQuest}
