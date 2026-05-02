@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Clock, MessageCircle, Search, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { resolveAvatarUrl } from "@/lib/defaultAvatars";
 
 function initials(name: string) {
   return name.slice(0, 2).toUpperCase();
