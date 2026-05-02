@@ -2,6 +2,7 @@ import { Quest, QuestProgress, QuestRich } from "@/hooks/usePlayer";
 import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
+import { parseQuestDuration } from "@/lib/questTimer";
 
 type Props = {
   quest: Quest | QuestRich;
@@ -12,7 +13,7 @@ type Props = {
   onUnlock?: (id: string) => void;
   onRegenerate?: (id: string) => void;
   onSelect?: (id: string) => void;
-  onStart?: (id: string) => void;
+  onStart?: (id: string, durationMinutes?: number) => void;
   onPause?: (id: string) => void;
   onResume?: (id: string) => void;
   onAbandon?: (id: string) => void;
@@ -55,6 +56,11 @@ export const QuestCard = ({
   const isPaused = rich.status === "paused";
   const isTimed = isInProgress || isPaused;
 
+  // Contextual: only treat the quest as timer-based when its title explicitly
+  // mentions a duration (e.g. "Meditate 15 min"). Otherwise it's instant.
+  const parsedDuration = parseQuestDuration(quest.title);
+  const hasTimer = parsedDuration !== null;
+
   // Live countdown tick.
   const endsAtMs = rich.ends_at ? new Date(rich.ends_at).getTime() : null;
   const [now, setNow] = useState(() => Date.now());
@@ -68,8 +74,10 @@ export const QuestCard = ({
   const totalMs = (rich.duration_minutes ?? 0) * 60 * 1000;
   const timerPct = totalMs > 0 ? Math.min(100, Math.round(((totalMs - Math.max(0, remainingMs)) / totalMs) * 100)) : 0;
 
-  // Disable manual completion entirely; only the timer-completion path awards XP.
-  const canStart = !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
+  // For timer quests: only the timer-completion path awards XP.
+  // For instant quests: the main button just completes.
+  const canStart = hasTimer && !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
+  const canInstantComplete = !hasTimer && !isCandidate && !quest.completed && !isTimed && !!onComplete && !globallyLocked;
   const canCompleteNow = timerDone && !!onComplete;
 
   return (
@@ -86,18 +94,24 @@ export const QuestCard = ({
       )}
     >
       <button
-        disabled={quest.completed || isCandidate || (isTimed && !canCompleteNow) || (!isTimed && !canStart)}
+        disabled={
+          quest.completed || isCandidate ||
+          (isTimed && !canCompleteNow) ||
+          (!isTimed && !canStart && !canInstantComplete)
+        }
         onClick={() => {
           if (quest.completed || isCandidate) return;
           if (canCompleteNow) return onComplete(quest.id);
-          if (!isTimed && canStart) return onStart!(quest.id);
+          if (canInstantComplete) return onComplete(quest.id);
+          if (!isTimed && canStart) return onStart!(quest.id, parsedDuration ?? undefined);
         }}
         aria-label={
           quest.completed ? "Quest completed"
             : canCompleteNow ? "Claim XP"
             : isInProgress ? "Quest running"
             : isPaused ? "Quest paused"
-            : "Start quest"
+            : hasTimer ? "Start timer"
+            : "Complete quest"
         }
         className={cn(
           "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-primary/40 transition-all",
@@ -118,7 +132,8 @@ export const QuestCard = ({
           : canCompleteNow ? <Check className="h-5 w-5" />
           : isInProgress ? <Timer className="h-5 w-5" />
           : isPaused ? <Pause className="h-5 w-5" />
-          : <Play className="h-5 w-5" />}
+          : hasTimer ? <Play className="h-5 w-5" />
+          : <Check className="h-5 w-5" />}
       </button>
 
       <div className="min-w-0 flex-1">
@@ -167,6 +182,11 @@ export const QuestCard = ({
               {s.slice(0, 3).toUpperCase()}
             </span>
           ))}
+          {hasTimer && !isTimed && !quest.completed && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-primary ring-1 ring-primary/30">
+              <Timer className="h-3 w-3" /> {parsedDuration} MIN
+            </span>
+          )}
           <span className="ml-auto inline-flex items-center gap-1 font-mono text-secondary">
             <Zap className="h-3 w-3" /> +{quest.reward_xp} XP
           </span>
