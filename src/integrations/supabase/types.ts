@@ -1696,6 +1696,7 @@ export type Database = {
         | "locked"
         | "candidate"
         | "discarded"
+        | "in_progress"
       quest_type: "daily" | "weekly" | "epic" | "dynamic"
       stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
       status_effect_kind: "burnout" | "flow_state" | "fatigue"
@@ -1850,6 +1851,7 @@ export const Constants = {
         "locked",
         "candidate",
         "discarded",
+        "in_progress",
       ],
       quest_type: ["daily", "weekly", "epic", "dynamic"],
       stat_kind: ["intelligence", "strength", "discipline", "charisma"],
