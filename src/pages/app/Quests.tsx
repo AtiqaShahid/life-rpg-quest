@@ -24,16 +24,17 @@ export default function Quests() {
 
   const buckets = useMemo(() => {
     const dailyAll = all.filter(q => (q.quest_type ?? (q.is_daily ? "daily" : "dynamic")) === "daily" && visible(q));
+    const isRunningStatus = (s: string) => s === "active" || s === "locked" || s === "in_progress" || s === "paused";
     return {
       dailyCompulsory: dailyAll.filter(q => q.is_compulsory).sort((a,b) => a.title.localeCompare(b.title)),
       dailySlots: [1,2,3].map(slot => dailyAll.find(q => !q.is_compulsory && q.slot_index === slot) ?? null),
       dailyCustom: dailyAll.filter(q => !q.is_compulsory && q.slot_index === null && q.generation_reason === "custom_user"),
-      weeklyActive: all.filter(q => q.quest_type === "weekly" && (q.status === "active" || q.status === "locked") && visible(q)),
+      weeklyActive: all.filter(q => q.quest_type === "weekly" && isRunningStatus(q.status) && visible(q)),
       weeklyCandidates: all.filter(q => q.quest_type === "weekly" && q.status === "candidate"),
-      epicActive: all.filter(q => q.quest_type === "epic" && (q.status === "active" || q.status === "locked") && visible(q)),
+      epicActive: all.filter(q => q.quest_type === "epic" && isRunningStatus(q.status) && visible(q)),
       epicCandidates: all.filter(q => q.quest_type === "epic" && q.status === "candidate"),
       dynamicCandidates: all.filter(q => q.quest_type === "dynamic" && q.status === "candidate"),
-      dynamicActive: all.filter(q => q.quest_type === "dynamic" && (q.status === "active" || q.status === "locked") && visible(q)),
+      dynamicActive: all.filter(q => q.quest_type === "dynamic" && isRunningStatus(q.status) && visible(q)),
       completed: all.filter(q => q.status === "completed" || q.completed),
     };
   }, [all]);
@@ -62,6 +63,20 @@ export default function Quests() {
   const genWeekly = async () => { setBusy("weekly"); await p.generateWeeklyOptions(); setBusy("none"); };
   const genEpic   = async () => { setBusy("epic");   await p.generateEpicOptions();   setBusy("none"); };
 
+  const runningId = p.activeTimedQuest?.id ?? null;
+  const isLockedGlobally = !!runningId;
+
+  const cardProps = (q: QuestRich) => ({
+    quest: q,
+    progress: progressByQuest.get(q.id),
+    onComplete: p.completeQuest,
+    onStart: p.startQuest,
+    onPause: p.pauseQuest,
+    onResume: p.resumeQuest,
+    onAbandon: p.abandonQuest,
+    globallyLocked: isLockedGlobally && q.id !== runningId,
+  });
+
   const renderList = (list: QuestRich[], emptyHint = "No quests here.") => (
     <div className="space-y-2">
       {list.length === 0 && (
@@ -70,9 +85,7 @@ export default function Quests() {
       {list.map(q => (
         <QuestCard
           key={q.id}
-          quest={q}
-          progress={progressByQuest.get(q.id)}
-          onComplete={p.completeQuest}
+          {...cardProps(q)}
           onRemove={p.removeQuest}
           onLock={p.lockQuest}
           onUnlock={p.unlockQuest}
@@ -91,7 +104,7 @@ export default function Quests() {
             <div className="font-mono text-[10px] tracking-widest text-muted-foreground">SLOT {slot}</div>
             <div className="mt-1 text-sm text-muted-foreground">Empty — generate a dynamic quest.</div>
           </div>
-          <button onClick={() => regenSlot(slot)} disabled={busy !== "none"}
+          <button onClick={() => regenSlot(slot)} disabled={busy !== "none" || isLockedGlobally}
             className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-primary px-3 py-2 font-display text-xs font-semibold text-primary-foreground shadow-glow-primary disabled:opacity-60">
             {isBusy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />} Generate
           </button>
@@ -105,9 +118,7 @@ export default function Quests() {
           {isBusy && <Loader2 className="h-3 w-3 animate-spin" />}
         </div>
         <QuestCard
-          quest={q}
-          progress={progressByQuest.get(q.id)}
-          onComplete={p.completeQuest}
+          {...cardProps(q)}
           onLock={p.lockQuest}
           onUnlock={p.unlockQuest}
           onRegenerate={() => regenSlot(slot)}
@@ -118,6 +129,16 @@ export default function Quests() {
 
   return (
     <div className="space-y-8">
+      {p.activeTimedQuest && (
+        <div className="glass-strong sticky top-2 z-30 flex items-center gap-3 rounded-2xl p-3 ring-2 ring-primary/40 shadow-glow-primary">
+          <Loader2 className="h-4 w-4 animate-pulse text-primary" />
+          <div className="min-w-0 flex-1">
+            <div className="font-mono text-[10px] tracking-widest text-secondary">FOCUS LOCK</div>
+            <div className="truncate font-display text-sm font-semibold">{p.activeTimedQuest.title}</div>
+          </div>
+          <span className="font-mono text-[11px] text-muted-foreground">other quests are locked</span>
+        </div>
+      )}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 font-mono text-[11px] tracking-widest text-secondary"><Scroll className="h-3.5 w-3.5" /> QUEST BOARD</div>
@@ -127,7 +148,8 @@ export default function Quests() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={refreshAllDaily}
-            disabled={busy !== "none"}
+            disabled={busy !== "none" || isLockedGlobally}
+            title={isLockedGlobally ? "Finish your active quest first" : ""}
             className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/40 px-3 py-2 font-display text-sm font-medium transition-colors hover:bg-muted/60 disabled:opacity-60"
           >
             {busy === "refresh-all" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
@@ -135,7 +157,8 @@ export default function Quests() {
           </button>
           <button
             onClick={askAI}
-            disabled={busy !== "none"}
+            disabled={busy !== "none" || isLockedGlobally}
+            title={isLockedGlobally ? "Finish your active quest first" : ""}
             className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-primary px-3 py-2 font-display text-sm font-semibold text-primary-foreground shadow-glow-primary transition-all hover:scale-[1.02] disabled:opacity-60"
           >
             {busy === "ai" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Wand2 className="h-4 w-4" />}
@@ -241,9 +264,7 @@ export default function Quests() {
                 {buckets.weeklyActive.map(q => (
                   <QuestCard
                     key={q.id}
-                    quest={q}
-                    progress={progressByQuest.get(q.id)}
-                    onComplete={p.completeQuest}
+                    {...cardProps(q)}
                     onRemove={p.removeQuest}
                     onLock={p.lockQuest}
                     onUnlock={p.unlockQuest}

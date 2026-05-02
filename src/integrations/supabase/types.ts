@@ -1076,6 +1076,8 @@ export type Database = {
           criteria: Json
           description: string | null
           difficulty: number
+          duration_minutes: number | null
+          ends_at: string | null
           energy: Database["public"]["Enums"]["quest_energy"]
           expires_at: string | null
           generation_reason: string | null
@@ -1083,13 +1085,18 @@ export type Database = {
           is_compulsory: boolean
           is_daily: boolean
           linked_stats: string[]
+          paused_at: string | null
+          pauses_used: number
           quest_type: Database["public"]["Enums"]["quest_type"]
           reward_xp: number
           selection_group: string | null
           slot_index: number | null
+          started_at: string | null
           status: Database["public"]["Enums"]["quest_status"]
           template_key: string | null
+          timer_penalty: number
           title: string
+          total_paused_ms: number
           user_id: string
         }
         Insert: {
@@ -1099,6 +1106,8 @@ export type Database = {
           criteria?: Json
           description?: string | null
           difficulty?: number
+          duration_minutes?: number | null
+          ends_at?: string | null
           energy?: Database["public"]["Enums"]["quest_energy"]
           expires_at?: string | null
           generation_reason?: string | null
@@ -1106,13 +1115,18 @@ export type Database = {
           is_compulsory?: boolean
           is_daily?: boolean
           linked_stats?: string[]
+          paused_at?: string | null
+          pauses_used?: number
           quest_type?: Database["public"]["Enums"]["quest_type"]
           reward_xp?: number
           selection_group?: string | null
           slot_index?: number | null
+          started_at?: string | null
           status?: Database["public"]["Enums"]["quest_status"]
           template_key?: string | null
+          timer_penalty?: number
           title: string
+          total_paused_ms?: number
           user_id: string
         }
         Update: {
@@ -1122,6 +1136,8 @@ export type Database = {
           criteria?: Json
           description?: string | null
           difficulty?: number
+          duration_minutes?: number | null
+          ends_at?: string | null
           energy?: Database["public"]["Enums"]["quest_energy"]
           expires_at?: string | null
           generation_reason?: string | null
@@ -1129,13 +1145,18 @@ export type Database = {
           is_compulsory?: boolean
           is_daily?: boolean
           linked_stats?: string[]
+          paused_at?: string | null
+          pauses_used?: number
           quest_type?: Database["public"]["Enums"]["quest_type"]
           reward_xp?: number
           selection_group?: string | null
           slot_index?: number | null
+          started_at?: string | null
           status?: Database["public"]["Enums"]["quest_status"]
           template_key?: string | null
+          timer_penalty?: number
           title?: string
+          total_paused_ms?: number
           user_id?: string
         }
         Relationships: []
@@ -1474,6 +1495,7 @@ export type Database = {
         Args: { p_recovery: boolean; p_user: string }
         Returns: Record<string, unknown>
       }
+      abandon_quest: { Args: { p_quest_id: string }; Returns: Json }
       adaptive_quest_pick: { Args: { p_user: string }; Returns: Json }
       add_custom_quest: {
         Args: {
@@ -1609,6 +1631,7 @@ export type Database = {
           }
       mark_messages_delivered: { Args: { p_sender: string }; Returns: number }
       mark_messages_seen: { Args: { p_sender: string }; Returns: number }
+      pause_quest: { Args: { p_quest_id: string }; Returns: Json }
       purchase_shop_item: {
         Args: { p_item_id: string; p_quantity?: number }
         Returns: Json
@@ -1629,6 +1652,7 @@ export type Database = {
         Args: { p_accept: boolean; p_id: string }
         Returns: Json
       }
+      resume_quest: { Args: { p_quest_id: string }; Returns: Json }
       roll_weekly_events_for_user: { Args: { p_user?: string }; Returns: Json }
       search_users: {
         Args: { p_limit?: number; p_query: string }
@@ -1666,6 +1690,10 @@ export type Database = {
         Args: { p_accountability: boolean; p_name: string }
         Returns: Json
       }
+      start_quest: {
+        Args: { p_duration_minutes?: number; p_quest_id: string }
+        Returns: Json
+      }
       tick_event_lifecycle: { Args: never; Returns: Json }
       tick_party_streaks_daily: { Args: never; Returns: Json }
       unlock_quest: { Args: { p_quest_id: string }; Returns: Json }
@@ -1696,6 +1724,7 @@ export type Database = {
         | "locked"
         | "candidate"
         | "discarded"
+        | "in_progress"
       quest_type: "daily" | "weekly" | "epic" | "dynamic"
       stat_kind: "intelligence" | "strength" | "discipline" | "charisma"
       status_effect_kind: "burnout" | "flow_state" | "fatigue"
@@ -1850,6 +1879,7 @@ export const Constants = {
         "locked",
         "candidate",
         "discarded",
+        "in_progress",
       ],
       quest_type: ["daily", "weekly", "epic", "dynamic"],
       stat_kind: ["intelligence", "strength", "discipline", "charisma"],

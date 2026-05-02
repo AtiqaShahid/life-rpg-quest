@@ -1,6 +1,7 @@
 import { Quest, QuestProgress, QuestRich } from "@/hooks/usePlayer";
-import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEffect, useState } from "react";
 
 type Props = {
   quest: Quest | QuestRich;
@@ -11,6 +12,12 @@ type Props = {
   onUnlock?: (id: string) => void;
   onRegenerate?: (id: string) => void;
   onSelect?: (id: string) => void;
+  onStart?: (id: string) => void;
+  onPause?: (id: string) => void;
+  onResume?: (id: string) => void;
+  onAbandon?: (id: string) => void;
+  /** Disable starting/regenerating because another quest is currently running. */
+  globallyLocked?: boolean;
   variant?: "default" | "candidate" | "compulsory";
 };
 
@@ -23,7 +30,18 @@ const TYPE_TINT: Record<string, string> = {
 
 const ENERGY_ICON = { low: BatteryLow, medium: Battery, high: BatteryFull } as const;
 
-export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnlock, onRegenerate, onSelect, variant = "default" }: Props) => {
+function formatRemaining(ms: number) {
+  if (ms <= 0) return "00:00";
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+export const QuestCard = ({
+  quest, progress, onComplete, onRemove, onLock, onUnlock, onRegenerate, onSelect,
+  onStart, onPause, onResume, onAbandon, globallyLocked = false, variant = "default",
+}: Props) => {
   const rich = quest as QuestRich;
   const qType = rich.quest_type ?? (quest.is_daily ? "daily" : "dynamic");
   const difficulty = rich.difficulty ?? 3;
@@ -33,6 +51,26 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
   const isLocked = rich.status === "locked";
   const isCandidate = variant === "candidate" || rich.status === "candidate";
   const isCompulsory = variant === "compulsory" || rich.is_compulsory;
+  const isInProgress = rich.status === "in_progress";
+  const isPaused = rich.status === "paused";
+  const isTimed = isInProgress || isPaused;
+
+  // Live countdown tick.
+  const endsAtMs = rich.ends_at ? new Date(rich.ends_at).getTime() : null;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!isInProgress) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [isInProgress]);
+  const remainingMs = endsAtMs ? endsAtMs - now : 0;
+  const timerDone = isInProgress && remainingMs <= 0;
+  const totalMs = (rich.duration_minutes ?? 0) * 60 * 1000;
+  const timerPct = totalMs > 0 ? Math.min(100, Math.round(((totalMs - Math.max(0, remainingMs)) / totalMs) * 100)) : 0;
+
+  // Disable manual completion entirely; only the timer-completion path awards XP.
+  const canStart = !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
+  const canCompleteNow = timerDone && !!onComplete;
 
   return (
     <div
@@ -42,22 +80,45 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
         isLocked && "ring-1 ring-amber-400/40",
         isCandidate && "ring-1 ring-violet-400/40 bg-violet-500/5",
         isCompulsory && "ring-1 ring-emerald-400/30",
+        isInProgress && "ring-2 ring-primary/60 shadow-glow-primary",
+        isPaused && "ring-2 ring-amber-400/50",
+        globallyLocked && !isTimed && !isCandidate && "opacity-50 pointer-events-none",
       )}
     >
       <button
-        disabled={quest.completed || isCandidate}
-        onClick={() => onComplete(quest.id)}
-        aria-label={quest.completed ? "Quest completed" : "Complete quest"}
+        disabled={quest.completed || isCandidate || (isTimed && !canCompleteNow) || (!isTimed && !canStart)}
+        onClick={() => {
+          if (quest.completed || isCandidate) return;
+          if (canCompleteNow) return onComplete(quest.id);
+          if (!isTimed && canStart) return onStart!(quest.id);
+        }}
+        aria-label={
+          quest.completed ? "Quest completed"
+            : canCompleteNow ? "Claim XP"
+            : isInProgress ? "Quest running"
+            : isPaused ? "Quest paused"
+            : "Start quest"
+        }
         className={cn(
           "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-primary/40 transition-all",
           quest.completed
             ? "bg-gradient-primary text-primary-foreground"
+            : canCompleteNow
+              ? "bg-gradient-primary text-primary-foreground animate-pulse-glow"
+            : isInProgress
+              ? "bg-primary/20 text-primary"
+            : isPaused
+              ? "bg-amber-400/20 text-amber-300"
             : isCandidate
               ? "bg-muted/40 text-muted-foreground"
               : "bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary hover:shadow-glow-primary animate-pulse-glow"
         )}
       >
-        {quest.completed ? <Check className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+        {quest.completed ? <Check className="h-5 w-5" />
+          : canCompleteNow ? <Check className="h-5 w-5" />
+          : isInProgress ? <Timer className="h-5 w-5" />
+          : isPaused ? <Pause className="h-5 w-5" />
+          : <Play className="h-5 w-5" />}
       </button>
 
       <div className="min-w-0 flex-1">
@@ -83,6 +144,21 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
               <Lock className="h-3 w-3" /> LOCKED
             </span>
           )}
+          {isInProgress && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-primary ring-1 ring-primary/40">
+              <Timer className="h-3 w-3" /> {formatRemaining(remainingMs)}
+            </span>
+          )}
+          {isPaused && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-amber-300 ring-1 ring-amber-400/30">
+              <Pause className="h-3 w-3" /> PAUSED · {rich.pauses_used ?? 0}/2
+            </span>
+          )}
+          {(rich.timer_penalty ?? 0) > 0 && (
+            <span className="rounded-full bg-rose-400/15 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-rose-300 ring-1 ring-rose-400/30">
+              -{Math.round((rich.timer_penalty ?? 0) * 100)}% XP
+            </span>
+          )}
           {isCandidate && (
             <span className="rounded-full bg-violet-400/15 px-1.5 py-0.5 font-mono text-[10px] tracking-wider text-violet-300 ring-1 ring-violet-400/30">OPTION</span>
           )}
@@ -95,6 +171,48 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
             <Zap className="h-3 w-3" /> +{quest.reward_xp} XP
           </span>
         </div>
+
+        {isTimed && (
+          <div className="mt-2">
+            <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
+              <span>{isPaused ? "PAUSED" : timerDone ? "DONE — claim XP" : "FOCUS TIMER"}</span>
+              <span>{rich.duration_minutes} min</span>
+            </div>
+            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-muted">
+              <div
+                className={cn("h-full rounded-full transition-all", timerDone ? "bg-emerald-400" : "bg-gradient-primary")}
+                style={{ width: `${timerPct}%` }}
+              />
+            </div>
+            <div className="mt-2 flex items-center gap-2">
+              {isInProgress && !timerDone && onPause && (
+                <button onClick={() => onPause(quest.id)} disabled={(rich.pauses_used ?? 0) >= 2}
+                  className="inline-flex items-center gap-1 rounded-lg bg-muted/60 px-2 py-1 font-display text-[11px] font-semibold text-foreground ring-1 ring-border hover:bg-muted disabled:opacity-50">
+                  <Pause className="h-3.5 w-3.5" /> Pause ({2 - (rich.pauses_used ?? 0)} left)
+                </button>
+              )}
+              {isPaused && onResume && (
+                <button onClick={() => onResume(quest.id)}
+                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
+                  <Play className="h-3.5 w-3.5" /> Resume
+                </button>
+              )}
+              {timerDone && onComplete && (
+                <button onClick={() => onComplete(quest.id)}
+                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
+                  <Check className="h-3.5 w-3.5" /> Claim XP
+                </button>
+              )}
+              {onAbandon && (
+                <button onClick={() => onAbandon(quest.id)}
+                  className="ml-auto inline-flex items-center gap-1 rounded-lg bg-muted/40 px-2 py-1 font-display text-[11px] font-semibold text-rose-300 ring-1 ring-rose-400/30 hover:bg-rose-500/10">
+                  <X className="h-3.5 w-3.5" /> Abandon
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {pct !== null && (
           <div className="mt-2">
             <div className="flex items-center justify-between font-mono text-[10px] text-muted-foreground">
@@ -119,7 +237,7 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
             <CheckCircle2 className="h-3.5 w-3.5" /> Select
           </button>
         )}
-        {!isCandidate && !isCompulsory && !quest.completed && (
+        {!isCandidate && !isCompulsory && !quest.completed && !isTimed && (
           <>
             {isLocked ? (
               onUnlock && (
@@ -138,13 +256,14 @@ export const QuestCard = ({ quest, progress, onComplete, onRemove, onLock, onUnl
             )}
             {onRegenerate && !isLocked && (
               <button onClick={() => onRegenerate(quest.id)} aria-label="Regenerate slot" title="Regenerate"
-                className="text-muted-foreground hover:text-primary">
+                disabled={globallyLocked}
+                className="text-muted-foreground hover:text-primary disabled:opacity-40">
                 <RefreshCw className="h-4 w-4" />
               </button>
             )}
           </>
         )}
-        {onRemove && !isCompulsory && !isLocked && (
+        {onRemove && !isCompulsory && !isLocked && !isTimed && (
           <button
             onClick={() => onRemove(quest.id)}
             aria-label="Remove quest"

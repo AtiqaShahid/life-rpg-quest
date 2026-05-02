@@ -105,7 +105,7 @@ export type Quest = { id: string; user_id: string; title: string; reward_xp: num
 
 export type QuestType = "daily" | "weekly" | "epic" | "dynamic";
 export type QuestEnergy = "low" | "medium" | "high";
-export type QuestStatus = "active" | "locked" | "candidate" | "discarded" | "completed" | "failed" | "paused";
+export type QuestStatus = "active" | "locked" | "candidate" | "discarded" | "completed" | "failed" | "paused" | "in_progress";
 export type QuestCriteria = { type_id?: string | string[]; min_duration?: number; min_difficulty?: string };
 
 export type QuestRich = Quest & {
@@ -122,6 +122,12 @@ export type QuestRich = Quest & {
   is_compulsory: boolean;
   slot_index: number | null;
   selection_group: string | null;
+  duration_minutes: number | null;
+  started_at: string | null;
+  ends_at: string | null;
+  paused_at: string | null;
+  pauses_used: number;
+  timer_penalty: number;
 };
 
 export type QuestProgress = {
@@ -708,6 +714,63 @@ function usePlayerInternal() {
 
   const xpNeeded = useMemo(() => profile ? xpToNext(profile.level) : 100, [profile]);
 
+  // ---- Timer-based quest actions ----
+  const activeTimedQuest = useMemo(() => {
+    const list = quests as unknown as QuestRich[];
+    return list.find(q => q.status === "in_progress" || q.status === "paused") ?? null;
+  }, [quests]);
+
+  const startQuest = useCallback(async (questId: string, durationMinutes?: number) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("start_quest", {
+      p_quest_id: questId,
+      p_duration_minutes: durationMinutes ?? null,
+    });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok) {
+      const msg =
+        r.reason === "another_quest_active" ? "Finish or abandon your current quest first." :
+        r.reason === "not_startable" ? "This quest can't be started right now." :
+        r.reason === "invalid_duration" ? "Duration must be 1–240 minutes." :
+        r.reason ?? "Could not start quest.";
+      toast.error(msg); return r;
+    }
+    toast.success("Quest started — focus up.");
+    await refresh();
+    return r;
+  }, [user, refresh]);
+
+  const pauseQuest = useCallback(async (questId: string) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("pause_quest", { p_quest_id: questId });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    const r = data as { ok: boolean; reason?: string };
+    if (!r.ok) {
+      toast.error(r.reason === "pause_limit" ? "Pause limit reached (2)." : (r.reason ?? "Could not pause."));
+      return r;
+    }
+    await refresh();
+    return r;
+  }, [user, refresh]);
+
+  const resumeQuest = useCallback(async (questId: string) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("resume_quest", { p_quest_id: questId });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    await refresh();
+    return data;
+  }, [user, refresh]);
+
+  const abandonQuest = useCallback(async (questId: string) => {
+    if (!user) return { ok: false };
+    const { data, error } = await supabase.rpc("abandon_quest", { p_quest_id: questId });
+    if (error) { toast.error(error.message); return { ok: false }; }
+    toast.info("Quest abandoned.");
+    await refresh();
+    return data;
+  }, [user, refresh]);
+
   const selectClass = useCallback(async (cls: CharacterClass, payToSkip = false) => {
     if (!user) return { ok: false };
     const { data, error } = await supabase.rpc("select_character_class", {
@@ -794,6 +857,7 @@ function usePlayerInternal() {
     regenerateDailySlot, regenerateAllDailySlots,
     lockQuest, unlockQuest,
     generateWeeklyOptions, generateEpicOptions, selectQuestOption,
+    activeTimedQuest, startQuest, pauseQuest, resumeQuest, abandonQuest,
   };
 }
 
