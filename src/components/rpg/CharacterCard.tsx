@@ -7,6 +7,7 @@ import { Flame, Sparkles } from "lucide-react";
 import { xpToNext } from "@/lib/rpg";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 import { Link } from "react-router-dom";
+import { resolveAvatarUrl } from "@/lib/defaultAvatars";
 
 type Props = {
   profile: Profile;
@@ -26,20 +27,13 @@ export const CharacterCard = ({ profile, stats, streak, xpFlash, levelUpFlash }:
     return () => clearTimeout(t);
   }, [levelUpFlash]);
 
-  // Resolve avatar with localStorage cache so it renders instantly on reload,
-  // and gracefully fall back to bundled hero asset if the remote URL fails.
-  const cacheKey = `avatar_url:${profile.user_id}`;
-  const cached = typeof window !== "undefined" ? window.localStorage.getItem(cacheKey) : null;
-  const initial = profile.avatar_url || cached || heroAvatar;
-  const [avatarSrc, setAvatarSrc] = useState<string>(initial);
-
+  // Resolve stored avatar value (supports `default:<id>` tokens + remote URLs)
+  // and gracefully fall back to bundled hero asset if the URL fails to load.
+  const resolved = resolveAvatarUrl(profile.avatar_url) || heroAvatar;
+  const [avatarSrc, setAvatarSrc] = useState<string>(resolved);
   useEffect(() => {
-    const next = profile.avatar_url || cached || heroAvatar;
-    setAvatarSrc(next);
-    if (profile.avatar_url) {
-      try { window.localStorage.setItem(cacheKey, profile.avatar_url); } catch { /* ignore */ }
-    }
-  }, [profile.avatar_url, cached, cacheKey]);
+    setAvatarSrc(resolveAvatarUrl(profile.avatar_url) || heroAvatar);
+  }, [profile.avatar_url]);
 
   const needed = xpToNext(profile.level);
 

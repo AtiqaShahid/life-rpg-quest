@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Check, CheckCheck, Image as ImageIcon, Send, X } from "lucide-react";
+import { resolveAvatarUrl } from "@/lib/defaultAvatars";
 
 function initials(name: string) { return name.slice(0, 2).toUpperCase(); }
 function formatTime(iso: string) {
@@ -96,7 +97,7 @@ export default function ChatPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <Avatar className="h-10 w-10 ring-1 ring-secondary/50">
-          {friend?.other_avatar_url && <AvatarImage src={friend.other_avatar_url} alt={friend.other_username} />}
+          {friend?.other_avatar_url && <AvatarImage src={resolveAvatarUrl(friend.other_avatar_url) ?? undefined} alt={friend.other_username} />}
           <AvatarFallback>{initials(friend?.other_username ?? "?")}</AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">

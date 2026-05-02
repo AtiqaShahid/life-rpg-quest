@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, Clock, MessageCircle, Search, UserMinus, UserPlus, Users, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { resolveAvatarUrl } from "@/lib/defaultAvatars";
 
 function initials(name: string) {
   return name.slice(0, 2).toUpperCase();
@@ -88,7 +89,7 @@ export default function FriendsPage() {
                 >
                   <div className="flex min-w-0 items-center gap-3">
                     <Avatar className="h-9 w-9 ring-1 ring-primary/40">
-                      {u.avatar_url && <AvatarImage src={u.avatar_url} alt={u.username} />}
+                      {u.avatar_url && <AvatarImage src={resolveAvatarUrl(u.avatar_url) ?? undefined} alt={u.username} />}
                       <AvatarFallback>{initials(u.username)}</AvatarFallback>
                     </Avatar>
                     <div className="min-w-0">
@@ -134,7 +135,7 @@ export default function FriendsPage() {
               <div key={f.id} className="glass flex flex-col gap-3 rounded-xl p-3">
                 <div className="flex min-w-0 items-center gap-3">
                   <Avatar className="h-10 w-10 shrink-0 ring-1 ring-accent/50">
-                    {f.other_avatar_url && <AvatarImage src={f.other_avatar_url} alt={f.other_username} />}
+                    {f.other_avatar_url && <AvatarImage src={resolveAvatarUrl(f.other_avatar_url) ?? undefined} alt={f.other_username} />}
                     <AvatarFallback>{initials(f.other_username)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
@@ -165,7 +166,7 @@ export default function FriendsPage() {
               <div key={f.id} className="glass flex items-center justify-between gap-3 rounded-xl p-3">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <Avatar className="h-9 w-9 shrink-0">
-                    {f.other_avatar_url && <AvatarImage src={f.other_avatar_url} alt={f.other_username} />}
+                    {f.other_avatar_url && <AvatarImage src={resolveAvatarUrl(f.other_avatar_url) ?? undefined} alt={f.other_username} />}
                     <AvatarFallback>{initials(f.other_username)}</AvatarFallback>
                   </Avatar>
                   <span className="truncate text-sm">{f.other_username}</span>
@@ -194,7 +195,7 @@ export default function FriendsPage() {
               <div key={f.id} className="glass group flex items-center justify-between gap-3 rounded-xl p-3 transition-all hover:border-primary/40 hover:shadow-lg">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <Avatar className="h-10 w-10 shrink-0 ring-1 ring-secondary/50">
-                    {f.other_avatar_url && <AvatarImage src={f.other_avatar_url} alt={f.other_username} />}
+                    {f.other_avatar_url && <AvatarImage src={resolveAvatarUrl(f.other_avatar_url) ?? undefined} alt={f.other_username} />}
                     <AvatarFallback>{initials(f.other_username)}</AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
