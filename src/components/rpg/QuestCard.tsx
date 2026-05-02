@@ -13,7 +13,7 @@ type Props = {
   onUnlock?: (id: string) => void;
   onRegenerate?: (id: string) => void;
   onSelect?: (id: string) => void;
-  onStart?: (id: string) => void;
+  onStart?: (id: string, durationMinutes?: number) => void;
   onPause?: (id: string) => void;
   onResume?: (id: string) => void;
   onAbandon?: (id: string) => void;
@@ -103,7 +103,7 @@ export const QuestCard = ({
           if (quest.completed || isCandidate) return;
           if (canCompleteNow) return onComplete(quest.id);
           if (canInstantComplete) return onComplete(quest.id);
-          if (!isTimed && canStart) return onStart!(quest.id);
+          if (!isTimed && canStart) return onStart!(quest.id, parsedDuration ?? undefined);
         }}
         aria-label={
           quest.completed ? "Quest completed"
