@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ArrowLeft, Check, CheckCheck, Image as ImageIcon, Send, X } from "lucide-react";
+import { resolveAvatarUrl } from "@/lib/defaultAvatars";
 
 function initials(name: string) { return name.slice(0, 2).toUpperCase(); }
 function formatTime(iso: string) {
