@@ -1,7 +1,7 @@
 import { useSocial, type LeaderboardScope } from "@/hooks/useSocial";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/lib/utils";
-import { Brain, Crown, Dumbbell, Flame, Gem, Globe, Medal, Shield, Sparkles, Trophy, Users } from "lucide-react";
+import { Brain, Crown, Dumbbell, Flame, Globe, Medal, Shield, Sparkles, Trophy, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 const TABS: Array<{ id: LeaderboardScope; label: string; icon: React.ComponentType<{ className?: string }> }> = [
