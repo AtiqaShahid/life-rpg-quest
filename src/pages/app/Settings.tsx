@@ -6,7 +6,7 @@ import { Loader2, Settings as Cog, Upload } from "lucide-react";
 import heroAvatar from "@/assets/hero-avatar.png";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { DEFAULT_AVATARS } from "@/lib/defaultAvatars";
+import { DEFAULT_AVATARS, resolveAvatarUrl } from "@/lib/defaultAvatars";
 import { cn } from "@/lib/utils";
 
 export default function Settings() {
@@ -43,10 +43,11 @@ export default function Settings() {
     setUsername(""); toast.success("Username updated");
   };
 
-  const pickDefaultAvatar = async (url: string) => {
-    setSavingAvatar(url);
+  const pickDefaultAvatar = async (id: string) => {
+    setSavingAvatar(id);
     try {
-      await p.updateProfile({ avatar_url: url });
+      // Persist a stable token, NOT the hashed asset URL (which changes on each build).
+      await p.updateProfile({ avatar_url: `default:${id}` });
       toast.success("Avatar updated");
       setGalleryOpen(false);
     } catch (err) {
@@ -67,7 +68,7 @@ export default function Settings() {
         <h2 className="font-display text-lg font-semibold">Avatar</h2>
         <div className="mt-4 flex flex-wrap items-center gap-5">
           <img
-            src={p.profile.avatar_url || heroAvatar}
+            src={resolveAvatarUrl(p.profile.avatar_url) || heroAvatar}
             alt="Current avatar"
             width={96} height={96}
             className="h-24 w-24 rounded-full object-cover ring-2 ring-primary/60 shadow-glow-primary"
@@ -93,13 +94,13 @@ export default function Settings() {
           </DialogHeader>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3 max-h-[60vh] overflow-y-auto pr-1">
             {DEFAULT_AVATARS.map(a => {
-              const selected = p.profile?.avatar_url === a.url;
-              const isSaving = savingAvatar === a.url;
+              const selected = p.profile?.avatar_url === `default:${a.id}`;
+              const isSaving = savingAvatar === a.id;
               return (
                 <button
                   key={a.id}
                   type="button"
-                  onClick={() => pickDefaultAvatar(a.url)}
+                  onClick={() => pickDefaultAvatar(a.id)}
                   disabled={!!savingAvatar}
                   className={cn(
                     "relative aspect-square rounded-full overflow-hidden ring-2 transition-all hover:scale-[1.04]",
