@@ -1,4 +1,4 @@
-#  Life RPG Quest...
+#  Life RPG Quest
 
 > A production-grade, gamified productivity platform that transforms real-world task execution into an RPG-style progression system using event-driven architecture, real-time synchronization, and social graph mechanics.
 
