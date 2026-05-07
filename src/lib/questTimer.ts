@@ -1,7 +1,7 @@
 // Intelligent quest timer classifier.
 // Uses explicit durations + effort keywords while excluding small habit actions.
 
-const ALLOWED = [10, 15, 20, 30] as const;
+const ALLOWED = [10, 15, 20, 25, 30] as const;
 export type AllowedDuration = (typeof ALLOWED)[number];
 
 type TimerQuestLike = {
