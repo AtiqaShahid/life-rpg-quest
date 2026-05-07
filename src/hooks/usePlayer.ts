@@ -328,8 +328,13 @@ function usePlayerInternal() {
             supabase.rpc("hard_daily_reset", { p_local_date: today }),
             supabase.rpc("hard_weekly_reset", { p_local_week_start: week }),
           ]);
-          if (daily.error) throw daily.error;
-          if (weekly.error) throw weekly.error;
+          if (daily.error) console.error("Daily backend reset failed", daily.error);
+          if (weekly.error) console.error("Weekly backend reset failed", weekly.error);
+
+          await Promise.all([
+            clientRepairBoard("daily", today, dailyChanged && !!daily.error),
+            clientRepairBoard("weekly", week, weeklyChanged && !!weekly.error),
+          ]);
 
           await Promise.allSettled([
             supabase.rpc("expire_active_effects"),
@@ -338,7 +343,10 @@ function usePlayerInternal() {
           ]);
         } catch (error) {
           console.error("Mission board reset failed", error);
-          toast.error("Mission board sync failed", { description: "Reload once — the backend repair is now in place." });
+          await Promise.allSettled([
+            clientRepairBoard("daily", today, dailyChanged),
+            clientRepairBoard("weekly", week, weeklyChanged),
+          ]);
         } finally {
           missionBoardResetLocks.delete(user.id);
           await refresh();
