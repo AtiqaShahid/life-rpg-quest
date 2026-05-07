@@ -32,7 +32,7 @@ function rewardForDifficulty(difficulty: number) {
 function buildQuestRow(
   userId: string,
   pick: PoolQuest,
-  opts: { questType: "daily" | "dynamic"; status: "active" | "candidate"; slotIndex: number | null },
+  opts: { questType: "daily" | "dynamic" | "weekly"; status: "active" | "candidate"; slotIndex: number | null; cycleEnd?: string },
 ) {
   const criteria: Record<string, string | number> = { type_id: pick.type_id };
   if (pick.min_duration && pick.min_duration > 0) criteria.min_duration = pick.min_duration;
@@ -52,9 +52,15 @@ function buildQuestRow(
     expires_at:
       opts.questType === "daily"
         ? tomorrowIso()
-        : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        : opts.questType === "weekly"
+          ? opts.cycleEnd ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
     generation_reason: `pool:${pick.category}`,
-    template_key: opts.questType === "daily" ? `daily_pool_slot_${opts.slotIndex ?? 0}` : "dynamic_pool",
+    template_key: opts.questType === "daily"
+      ? `daily_pool_slot_${opts.slotIndex ?? 0}`
+      : opts.questType === "weekly"
+        ? `weekly_pool_slot_${opts.slotIndex ?? 0}`
+        : "dynamic_pool",
     is_compulsory: false,
     slot_index: opts.slotIndex,
     duration_minutes: duration,
