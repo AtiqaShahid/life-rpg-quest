@@ -8,14 +8,6 @@ import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/ques
 import { getQuestTimerDuration } from "@/lib/questTimer";
 
 const missionBoardResetLocks = new Map<string, Promise<void>>();
-const QUEST_STAT_BY_TYPE: Record<PoolQuest["type_id"], QuestRich["linked_stats"]> = {
-  study: ["intelligence", "discipline"],
-  workout: ["strength", "discipline"],
-  cardio: ["strength"],
-  meditation: ["discipline"],
-  socializing: ["charisma"],
-  public_speaking: ["charisma"],
-};
 
 function tomorrowIso() {
   const d = new Date();
@@ -34,7 +26,7 @@ function buildQuestRow(
   pick: PoolQuest,
   opts: { questType: "daily" | "dynamic" | "weekly"; status: "active" | "candidate"; slotIndex: number | null; cycleEnd?: string },
 ) {
-  const criteria: Record<string, string | number> = { type_id: pick.type_id };
+  const criteria: { type_id?: PoolQuest["type_id"]; min_duration?: number } = { type_id: pick.type_id };
   if (pick.min_duration && pick.min_duration > 0) criteria.min_duration = pick.min_duration;
   const duration = getQuestTimerDuration({ title: pick.title, criteria });
   return {
