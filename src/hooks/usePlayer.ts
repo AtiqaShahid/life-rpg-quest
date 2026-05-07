@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
 import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
 
+const missionBoardResetLocks = new Map<string, Promise<void>>();
+
 function tomorrowIso() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
@@ -223,8 +225,6 @@ function usePlayerInternal() {
     const hasCache = !!profile;
     if (!hasCache) setLoading(true);
 
-    refresh();
-
     // Local-date helpers (user timezone, not server timezone).
     const localDateISO = () => {
       const d = new Date();
@@ -255,20 +255,34 @@ function usePlayerInternal() {
       const weeklyChanged = force || week !== lastSeenWeek;
       lastSeenDate = today;
       lastSeenWeek = week;
-      try {
-        await Promise.all([
-          supabase.rpc("hard_daily_reset", { p_local_date: today }),
-          supabase.rpc("hard_weekly_reset", { p_local_week_start: week }),
-          supabase.rpc("expire_active_effects"),
-          supabase.rpc("recover_fatigue"),
-          supabase.rpc("evaluate_status_effects", { p_user: user.id }),
-        ]);
-        if (dailyChanged || weeklyChanged) {
-          await refresh();
-        } else {
+      const locked = missionBoardResetLocks.get(user.id);
+      if (locked) return locked;
+
+      const job = (async () => {
+        try {
+          const [daily, weekly] = await Promise.all([
+            supabase.rpc("hard_daily_reset", { p_local_date: today }),
+            supabase.rpc("hard_weekly_reset", { p_local_week_start: week }),
+          ]);
+          if (daily.error) throw daily.error;
+          if (weekly.error) throw weekly.error;
+
+          await Promise.allSettled([
+            supabase.rpc("expire_active_effects"),
+            supabase.rpc("recover_fatigue"),
+            supabase.rpc("evaluate_status_effects", { p_user: user.id }),
+          ]);
+        } catch (error) {
+          console.error("Mission board reset failed", error);
+          toast.error("Mission board sync failed", { description: "Reload once — the backend repair is now in place." });
+        } finally {
+          missionBoardResetLocks.delete(user.id);
           await refresh();
         }
-      } catch { /* non-fatal */ }
+      })();
+
+      missionBoardResetLocks.set(user.id, job);
+      return job;
     };
 
     // Initial run on mount/login.
