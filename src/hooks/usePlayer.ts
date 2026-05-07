@@ -220,21 +220,83 @@ function usePlayerInternal() {
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
-    // If we have cached data, render instantly while we refresh in background.
     const hasCache = !!profile;
     if (!hasCache) setLoading(true);
 
-    // 1) Fetch real data immediately — do not wait on housekeeping RPCs.
     refresh();
 
-    // 2) Run housekeeping in parallel; refresh once when done so quests/effects update.
-    Promise.all([
-      supabase.rpc("reset_daily_quests", { p_user: user.id }),
-      supabase.rpc("seed_compulsory_quests"),
-      supabase.rpc("expire_active_effects"),
-      supabase.rpc("recover_fatigue"),
-      supabase.rpc("evaluate_status_effects", { p_user: user.id }),
-    ]).then(() => { refresh(); }).catch(() => { /* non-fatal */ });
+    // Local-date helpers (user timezone, not server timezone).
+    const localDateISO = () => {
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+    const localWeekStartISO = () => {
+      const d = new Date();
+      const dow = d.getDay(); // 0 = Sun
+      const diff = (dow + 6) % 7; // Monday-based week start
+      d.setDate(d.getDate() - diff);
+      d.setHours(0, 0, 0, 0);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    };
+
+    let lastSeenDate = localDateISO();
+    let lastSeenWeek = localWeekStartISO();
+
+    const runResets = async (force = false) => {
+      const today = localDateISO();
+      const week = localWeekStartISO();
+      const dailyChanged = force || today !== lastSeenDate;
+      const weeklyChanged = force || week !== lastSeenWeek;
+      lastSeenDate = today;
+      lastSeenWeek = week;
+      try {
+        await Promise.all([
+          supabase.rpc("hard_daily_reset", { p_local_date: today }),
+          supabase.rpc("hard_weekly_reset", { p_local_week_start: week }),
+          supabase.rpc("expire_active_effects"),
+          supabase.rpc("recover_fatigue"),
+          supabase.rpc("evaluate_status_effects", { p_user: user.id }),
+        ]);
+        if (dailyChanged || weeklyChanged) {
+          await refresh();
+        } else {
+          await refresh();
+        }
+      } catch { /* non-fatal */ }
+    };
+
+    // Initial run on mount/login.
+    runResets(true);
+
+    // Poll every 60s — auto-detect midnight crossover in user's local timezone.
+    const interval = window.setInterval(() => {
+      const today = localDateISO();
+      const week = localWeekStartISO();
+      if (today !== lastSeenDate || week !== lastSeenWeek) {
+        runResets(false);
+      }
+    }, 60_000);
+
+    // Re-check when tab becomes visible again (laptop sleep / next-morning open).
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        const today = localDateISO();
+        const week = localWeekStartISO();
+        if (today !== lastSeenDate || week !== lastSeenWeek) runResets(false);
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, refresh]);
 
