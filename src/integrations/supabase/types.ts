@@ -1543,6 +1543,14 @@ export type Database = {
         Args: { p_recovery: boolean; p_user: string }
         Returns: Record<string, unknown>
       }
+      _seed_three_daily_quests: {
+        Args: { p_local_date: string; p_user: string }
+        Returns: undefined
+      }
+      _seed_three_weekly_quests: {
+        Args: { p_user: string; p_week_start: string }
+        Returns: undefined
+      }
       abandon_quest: { Args: { p_quest_id: string }; Returns: Json }
       adaptive_quest_pick: { Args: { p_user: string }; Returns: Json }
       add_custom_quest: {
