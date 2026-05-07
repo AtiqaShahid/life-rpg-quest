@@ -980,6 +980,8 @@ export type Database = {
           exhaustion: number
           exhaustion_updated_at: string
           id: string
+          last_daily_reset: string | null
+          last_weekly_reset: string | null
           level: number
           skill_points: number
           tokens: number
@@ -997,6 +999,8 @@ export type Database = {
           exhaustion?: number
           exhaustion_updated_at?: string
           id?: string
+          last_daily_reset?: string | null
+          last_weekly_reset?: string | null
           level?: number
           skill_points?: number
           tokens?: number
@@ -1014,6 +1018,8 @@ export type Database = {
           exhaustion?: number
           exhaustion_updated_at?: string
           id?: string
+          last_daily_reset?: string | null
+          last_weekly_reset?: string | null
           level?: number
           skill_points?: number
           tokens?: number
@@ -1021,6 +1027,48 @@ export type Database = {
           user_id?: string
           username?: string
           xp?: number
+        }
+        Relationships: []
+      }
+      quest_archive: {
+        Row: {
+          archive_date: string
+          archived_at: string
+          completed: boolean
+          id: string
+          is_compulsory: boolean
+          payload: Json
+          quest_type: string
+          template_key: string | null
+          title: string
+          user_id: string
+          xp_earned: number
+        }
+        Insert: {
+          archive_date: string
+          archived_at?: string
+          completed?: boolean
+          id?: string
+          is_compulsory?: boolean
+          payload?: Json
+          quest_type: string
+          template_key?: string | null
+          title: string
+          user_id: string
+          xp_earned?: number
+        }
+        Update: {
+          archive_date?: string
+          archived_at?: string
+          completed?: boolean
+          id?: string
+          is_compulsory?: boolean
+          payload?: Json
+          quest_type?: string
+          template_key?: string | null
+          title?: string
+          user_id?: string
+          xp_earned?: number
         }
         Relationships: []
       }
@@ -1581,6 +1629,8 @@ export type Database = {
       }
       get_status_xp_multiplier: { Args: { p_user: string }; Returns: number }
       get_streak_skill_bonus: { Args: { p_user: string }; Returns: number }
+      hard_daily_reset: { Args: { p_local_date: string }; Returns: Json }
+      hard_weekly_reset: { Args: { p_local_week_start: string }; Returns: Json }
       insert_dynamic_quest: {
         Args: {
           p_criteria: Json
