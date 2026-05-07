@@ -5,6 +5,7 @@ import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, x
 import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
 import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
+import { getQuestTimerDuration } from "@/lib/questTimer";
 
 const missionBoardResetLocks = new Map<string, Promise<void>>();
 
@@ -27,6 +28,7 @@ function buildQuestRow(
 ) {
   const criteria: Record<string, string | number> = { type_id: pick.type_id };
   if (pick.min_duration && pick.min_duration > 0) criteria.min_duration = pick.min_duration;
+  const duration = getQuestTimerDuration({ title: pick.title, criteria });
   return {
     user_id: userId,
     title: pick.title,
@@ -47,6 +49,7 @@ function buildQuestRow(
     template_key: opts.questType === "daily" ? `daily_pool_slot_${opts.slotIndex ?? 0}` : "dynamic_pool",
     is_compulsory: false,
     slot_index: opts.slotIndex,
+    duration_minutes: duration,
   };
 }
 
