@@ -8,6 +8,14 @@ import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/ques
 import { getQuestTimerDuration } from "@/lib/questTimer";
 
 const missionBoardResetLocks = new Map<string, Promise<void>>();
+const QUEST_STAT_BY_TYPE: Record<PoolQuest["type_id"], QuestRich["linked_stats"]> = {
+  study: ["intelligence", "discipline"],
+  workout: ["strength", "discipline"],
+  cardio: ["strength"],
+  meditation: ["discipline"],
+  socializing: ["charisma"],
+  public_speaking: ["charisma"],
+};
 
 function tomorrowIso() {
   const d = new Date();
@@ -61,6 +69,15 @@ function buildProgressRow(questId: string, userId: string, pick: PoolQuest) {
     target: 1,
     unit: "count" as const,
   };
+}
+
+function buildWeeklyFallbackPick(slot: number): PoolQuest {
+  const weekly: PoolQuest[] = [
+    { title: "Deep work marathon", category: "focus", type_id: "study", difficulty: 5, energy: "high", linked_stats: ["intelligence", "discipline"], min_duration: 30 },
+    { title: "Train 4 sessions", category: "health", type_id: "workout", difficulty: 5, energy: "high", linked_stats: ["strength", "discipline"], min_duration: 30 },
+    { title: "Read 3 sessions", category: "learning", type_id: "study", difficulty: 4, energy: "medium", linked_stats: ["intelligence"], min_duration: 20 },
+  ];
+  return weekly[(slot - 1) % weekly.length];
 }
 
 export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number; skill_points: number };
