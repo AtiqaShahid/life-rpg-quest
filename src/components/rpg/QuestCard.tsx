@@ -2,7 +2,7 @@ import { Quest, QuestProgress, QuestRich } from "@/hooks/usePlayer";
 import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
-import { parseQuestDuration } from "@/lib/questTimer";
+import { getQuestTimerDuration } from "@/lib/questTimer";
 
 type Props = {
   quest: Quest | QuestRich;
@@ -56,9 +56,8 @@ export const QuestCard = ({
   const isPaused = rich.status === "paused";
   const isTimed = isInProgress || isPaused;
 
-  // Contextual: only treat the quest as timer-based when its title explicitly
-  // mentions a duration (e.g. "Meditate 15 min"). Otherwise it's instant.
-  const parsedDuration = parseQuestDuration(quest.title);
+  // Intelligent: explicit durations + effort keywords, excluding small habit actions.
+  const parsedDuration = getQuestTimerDuration(rich);
   const hasTimer = parsedDuration !== null;
 
   // Live countdown tick.

@@ -5,6 +5,7 @@ import { applyXp, ACHIEVEMENTS, STAT_GAIN_PER_ACTIVITY, StatKey, streakUpdate, x
 import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
 import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
+import { getQuestTimerDuration } from "@/lib/questTimer";
 
 const missionBoardResetLocks = new Map<string, Promise<void>>();
 
@@ -23,10 +24,11 @@ function rewardForDifficulty(difficulty: number) {
 function buildQuestRow(
   userId: string,
   pick: PoolQuest,
-  opts: { questType: "daily" | "dynamic"; status: "active" | "candidate"; slotIndex: number | null },
+  opts: { questType: "daily" | "dynamic" | "weekly"; status: "active" | "candidate"; slotIndex: number | null; cycleEnd?: string },
 ) {
-  const criteria: Record<string, string | number> = { type_id: pick.type_id };
+  const criteria: { type_id?: PoolQuest["type_id"]; min_duration?: number } = { type_id: pick.type_id };
   if (pick.min_duration && pick.min_duration > 0) criteria.min_duration = pick.min_duration;
+  const duration = getQuestTimerDuration({ title: pick.title, criteria });
   return {
     user_id: userId,
     title: pick.title,
@@ -42,11 +44,18 @@ function buildQuestRow(
     expires_at:
       opts.questType === "daily"
         ? tomorrowIso()
-        : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        : opts.questType === "weekly"
+          ? opts.cycleEnd ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+          : new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
     generation_reason: `pool:${pick.category}`,
-    template_key: opts.questType === "daily" ? `daily_pool_slot_${opts.slotIndex ?? 0}` : "dynamic_pool",
+    template_key: opts.questType === "daily"
+      ? `daily_pool_slot_${opts.slotIndex ?? 0}`
+      : opts.questType === "weekly"
+        ? `weekly_pool_slot_${opts.slotIndex ?? 0}`
+        : "dynamic_pool",
     is_compulsory: false,
     slot_index: opts.slotIndex,
+    duration_minutes: duration,
   };
 }
 
@@ -58,6 +67,15 @@ function buildProgressRow(questId: string, userId: string, pick: PoolQuest) {
     target: 1,
     unit: "count" as const,
   };
+}
+
+function buildWeeklyFallbackPick(slot: number): PoolQuest {
+  const weekly: PoolQuest[] = [
+    { title: "Deep work marathon", category: "focus", type_id: "study", difficulty: 5, energy: "high", linked_stats: ["intelligence", "discipline"], min_duration: 30 },
+    { title: "Train 4 sessions", category: "health", type_id: "workout", difficulty: 5, energy: "high", linked_stats: ["strength", "discipline"], min_duration: 30 },
+    { title: "Read 3 sessions", category: "learning", type_id: "study", difficulty: 4, energy: "medium", linked_stats: ["intelligence"], min_duration: 20 },
+  ];
+  return weekly[(slot - 1) % weekly.length];
 }
 
 export type Profile = { id: string; user_id: string; username: string; avatar_url: string | null; level: number; xp: number; skill_points: number };
@@ -248,6 +266,44 @@ function usePlayerInternal() {
     let lastSeenDate = localDateISO();
     let lastSeenWeek = localWeekStartISO();
 
+    const clientRepairBoard = async (questType: "daily" | "weekly", cycleStart: string, forceClear: boolean) => {
+      const cycleEnd = new Date(`${cycleStart}T00:00:00`);
+      cycleEnd.setDate(cycleEnd.getDate() + (questType === "daily" ? 1 : 7));
+      const existing = await supabase.from("quests")
+        .select("id, slot_index, status, completed")
+        .eq("user_id", user.id)
+        .eq("quest_type", questType)
+        .in("status", ["active", "locked", "in_progress", "paused", "completed"]);
+      const rows = (existing.data ?? []) as Pick<QuestRich, "id" | "slot_index" | "status" | "completed">[];
+      const slots = new Set(rows.map(q => q.slot_index).filter((s): s is number => !!s && s >= 1 && s <= 3));
+      if (!forceClear && slots.size === 3) return;
+
+      const ids = rows.map(q => q.id);
+      if (ids.length > 0) {
+        await supabase.from("quest_progress").delete().in("quest_id", ids);
+        await supabase.from("quests").delete().in("id", ids);
+      }
+
+      const blocked = new Set<string>();
+      const picks = [1, 2, 3].map(slot => {
+        const pick = questType === "weekly" ? buildWeeklyFallbackPick(slot) : pickQuestForSlot(slot, blocked);
+        if (pick) blocked.add(pick.title.toLowerCase());
+        return { slot, pick };
+      }).filter((x): x is { slot: number; pick: PoolQuest } => !!x.pick);
+      const inserts = picks.map(({ slot, pick }) => buildQuestRow(user.id, pick, {
+        questType,
+        status: "active",
+        slotIndex: slot,
+        cycleEnd: cycleEnd.toISOString(),
+      }));
+      const inserted = await supabase.from("quests").insert(inserts).select("id");
+      if (inserted.data) {
+        await supabase.from("quest_progress").insert(inserted.data.map((r, idx) =>
+          buildProgressRow(r.id, user.id, picks[idx].pick),
+        ));
+      }
+    };
+
     const runResets = async (force = false) => {
       const today = localDateISO();
       const week = localWeekStartISO();
@@ -264,8 +320,13 @@ function usePlayerInternal() {
             supabase.rpc("hard_daily_reset", { p_local_date: today }),
             supabase.rpc("hard_weekly_reset", { p_local_week_start: week }),
           ]);
-          if (daily.error) throw daily.error;
-          if (weekly.error) throw weekly.error;
+          if (daily.error) console.error("Daily backend reset failed", daily.error);
+          if (weekly.error) console.error("Weekly backend reset failed", weekly.error);
+
+          await Promise.all([
+            clientRepairBoard("daily", today, dailyChanged && !!daily.error),
+            clientRepairBoard("weekly", week, weeklyChanged && !!weekly.error),
+          ]);
 
           await Promise.allSettled([
             supabase.rpc("expire_active_effects"),
@@ -274,7 +335,10 @@ function usePlayerInternal() {
           ]);
         } catch (error) {
           console.error("Mission board reset failed", error);
-          toast.error("Mission board sync failed", { description: "Reload once — the backend repair is now in place." });
+          await Promise.allSettled([
+            clientRepairBoard("daily", today, dailyChanged),
+            clientRepairBoard("weekly", week, weeklyChanged),
+          ]);
         } finally {
           missionBoardResetLocks.delete(user.id);
           await refresh();
