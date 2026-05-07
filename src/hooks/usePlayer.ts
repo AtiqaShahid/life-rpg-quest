@@ -274,6 +274,44 @@ function usePlayerInternal() {
     let lastSeenDate = localDateISO();
     let lastSeenWeek = localWeekStartISO();
 
+    const clientRepairBoard = async (questType: "daily" | "weekly", cycleStart: string, forceClear: boolean) => {
+      const cycleEnd = new Date(`${cycleStart}T00:00:00`);
+      cycleEnd.setDate(cycleEnd.getDate() + (questType === "daily" ? 1 : 7));
+      const existing = await supabase.from("quests")
+        .select("id, slot_index, status, completed")
+        .eq("user_id", user.id)
+        .eq("quest_type", questType)
+        .in("status", ["active", "locked", "in_progress", "paused", "completed"]);
+      const rows = (existing.data ?? []) as Pick<QuestRich, "id" | "slot_index" | "status" | "completed">[];
+      const slots = new Set(rows.map(q => q.slot_index).filter((s): s is number => !!s && s >= 1 && s <= 3));
+      if (!forceClear && slots.size === 3) return;
+
+      const ids = rows.map(q => q.id);
+      if (ids.length > 0) {
+        await supabase.from("quest_progress").delete().in("quest_id", ids);
+        await supabase.from("quests").delete().in("id", ids);
+      }
+
+      const blocked = new Set<string>();
+      const picks = [1, 2, 3].map(slot => {
+        const pick = questType === "weekly" ? buildWeeklyFallbackPick(slot) : pickQuestForSlot(slot, blocked);
+        if (pick) blocked.add(pick.title.toLowerCase());
+        return { slot, pick };
+      }).filter((x): x is { slot: number; pick: PoolQuest } => !!x.pick);
+      const inserts = picks.map(({ slot, pick }) => buildQuestRow(user.id, pick, {
+        questType,
+        status: "active",
+        slotIndex: slot,
+        cycleEnd: cycleEnd.toISOString(),
+      }));
+      const inserted = await supabase.from("quests").insert(inserts).select("id");
+      if (inserted.data) {
+        await supabase.from("quest_progress").insert(inserted.data.map((r, idx) =>
+          buildProgressRow(r.id, user.id, picks[idx].pick),
+        ));
+      }
+    };
+
     const runResets = async (force = false) => {
       const today = localDateISO();
       const week = localWeekStartISO();
