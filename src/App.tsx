@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -52,6 +52,16 @@ const App = () => {
             <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<Navigate to="/app" replace />} />
+            <Route path="/activities" element={<Navigate to="/app/activities" replace />} />
+            <Route path="/quests" element={<Navigate to="/app/quests" replace />} />
+            <Route path="/stats" element={<Navigate to="/app/stats" replace />} />
+            <Route path="/skills" element={<Navigate to="/app/skills" replace />} />
+            <Route path="/profile" element={<Navigate to="/app/character" replace />} />
+            <Route path="/character" element={<Navigate to="/app/character" replace />} />
+            <Route path="/achievements" element={<Navigate to="/app/achievements" replace />} />
+            <Route path="/analytics" element={<Navigate to="/app/analytics" replace />} />
+            <Route path="/settings" element={<Navigate to="/app/settings" replace />} />
 
             <Route
               path="/app"
@@ -62,6 +72,7 @@ const App = () => {
               }
             >
               <Route index element={<Dashboard />} />
+              <Route path="dashboard" element={<Dashboard />} />
               <Route path="activities" element={<Activities />} />
               <Route path="quests" element={<Quests />} />
               <Route path="stats" element={<StatsPage />} />
