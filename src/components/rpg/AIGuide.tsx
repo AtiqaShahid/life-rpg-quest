@@ -59,8 +59,9 @@ export function AIGuide() {
       ctx.level = playerCtx.profile.level;
       ctx.xp = playerCtx.profile.xp;
       ctx.xp_to_next = playerCtx.xpNeeded;
-      ctx.coins = playerCtx.profile.coins;
-      ctx.tokens = playerCtx.profile.tokens;
+      const econ = playerCtx.profile as unknown as { coins?: number; tokens?: number };
+      if (econ.coins !== undefined) ctx.coins = econ.coins;
+      if (econ.tokens !== undefined) ctx.tokens = econ.tokens;
     }
     if (playerCtx?.streak) ctx.current_streak = playerCtx.streak.current_streak;
     if (playerCtx?.stats) ctx.stats = {
@@ -68,7 +69,8 @@ export function AIGuide() {
       DIS: playerCtx.stats.discipline, CHA: playerCtx.stats.charisma,
     };
     if (playerCtx?.quests) {
-      const active = playerCtx.quests.filter(q => !q.completed && q.status !== "completed");
+      const all = playerCtx.quests as unknown as Array<{ title: string; completed: boolean; status?: string; quest_type?: string }>;
+      const active = all.filter(q => !q.completed && q.status !== "completed");
       ctx.daily_quests = active.filter(q => q.quest_type === "daily").map(q => q.title);
       ctx.weekly_quests = active.filter(q => q.quest_type === "weekly").map(q => q.title);
     }
