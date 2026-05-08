@@ -6,6 +6,7 @@ import { useAuth } from "@/context/AuthContext";
 import { EarnXpBar } from "./EarnXpBar";
 import { CurrencyBadges } from "./CurrencyBadges";
 import { ClassOnboardingGate } from "./ClassOnboardingGate";
+import { AIGuide } from "./AIGuide";
 
 const NAV = [
   { to: "/app",              icon: LayoutDashboard, label: "Dashboard" },
@@ -118,6 +119,8 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
       <EarnXpBar />
       {/* First-time class selection gate */}
       <ClassOnboardingGate />
+      {/* Floating AI guide */}
+      <AIGuide />
     </div>
   );
 };
