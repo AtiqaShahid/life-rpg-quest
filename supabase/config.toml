@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.generate-dynamic-quests]
 verify_jwt = true
+
+[functions.ai-guide]
+verify_jwt = false
