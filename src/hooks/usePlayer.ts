@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import type { SkillCatalog, SkillNode, Difficulty } from "@/lib/progression";
 import { pickQuestForSlot, pickDynamicOptions, type PoolQuest } from "@/lib/questPool";
 import { getQuestTimerDuration } from "@/lib/questTimer";
+import { readActivitySession } from "@/hooks/useActivitySession";
 
 const missionBoardResetLocks = new Map<string, Promise<void>>();
 
@@ -454,6 +455,12 @@ function usePlayerInternal() {
     note?: string,
   ): Promise<{ ok: boolean; reason?: string }> => {
     if (!user) return { ok: false, reason: "not_authenticated" };
+    // Global progression lock — refuse if a timed quest is currently running.
+    const runningQuest = (quests as unknown as QuestRich[]).find(q => q.status === "in_progress");
+    if (runningQuest) {
+      toast.error("Focus session active", { description: "Finish your active quest before logging activities." });
+      return { ok: false, reason: "focus_locked_quest" };
+    }
     const t = activityTypes.find(a => a.id === typeId);
     if (!t) return { ok: false, reason: "invalid_activity_type" };
 
@@ -562,6 +569,18 @@ function usePlayerInternal() {
     if (!user) return;
     const q = quests.find(x => x.id === questId);
     if (!q || q.completed) return;
+    // Global lock — disallow completing OTHER quests while one is running,
+    // and disallow ANY quest completion while an activity session is live.
+    const list = quests as unknown as QuestRich[];
+    const runningQuest = list.find(x => x.status === "in_progress");
+    if (runningQuest && runningQuest.id !== questId) {
+      toast.error("Focus session active", { description: "Finish your active quest first." });
+      return;
+    }
+    if (readActivitySession(user.id)) {
+      toast.error("Focus session active", { description: "Finish your activity session before claiming quest XP." });
+      return;
+    }
     const { data, error } = await supabase.rpc("complete_quest", { p_quest_id: questId });
     if (error) { toast.error(error.message); return; }
     const r = data as {
@@ -862,6 +881,11 @@ function usePlayerInternal() {
 
   const startQuest = useCallback(async (questId: string, durationMinutes?: number) => {
     if (!user) return { ok: false };
+    // Global lock — refuse if an activity session is already running.
+    if (readActivitySession(user.id)) {
+      toast.error("Focus session active", { description: "Finish your activity session before starting a quest timer." });
+      return { ok: false, reason: "focus_locked_activity" };
+    }
     const { data, error } = await supabase.rpc("start_quest", {
       p_quest_id: questId,
       p_duration_minutes: durationMinutes ?? null,
