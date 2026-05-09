@@ -3,9 +3,11 @@ import { usePlayer, type QuestRich } from "@/hooks/usePlayer";
 import { QuestCard } from "@/components/rpg/QuestCard";
 import { Loader2, Scroll, Compass, Flame, Anchor } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useFocusLock } from "@/hooks/useFocusLock";
 
 export default function Quests() {
   const p = usePlayer();
+  const lock = useFocusLock();
 
   const all = p.quests as unknown as QuestRich[];
   const progressByQuest = useMemo(() => {
@@ -35,7 +37,9 @@ export default function Quests() {
   }
 
   const runningId = p.activeTimedQuest?.id ?? null;
-  const isLockedGlobally = !!runningId;
+  // Lock UI for ANY focus session — quest timer OR activity session.
+  const isLockedGlobally = lock.isLocked;
+  const activityLocking = lock.isLocked && lock.source === "activity";
 
   const cardProps = (q: QuestRich) => ({
     quest: q,
@@ -45,7 +49,9 @@ export default function Quests() {
     onPause: p.pauseQuest,
     onResume: p.resumeQuest,
     onAbandon: p.abandonQuest,
-    globallyLocked: isLockedGlobally && q.id !== runningId,
+    // Lock every quest if an activity session is running, or every non-active
+    // quest if a different quest timer is in progress.
+    globallyLocked: activityLocking || (isLockedGlobally && q.id !== runningId),
   });
 
   const renderList = (list: QuestRich[], emptyHint: string) => (
