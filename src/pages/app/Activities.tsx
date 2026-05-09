@@ -6,6 +6,7 @@ import { LogActivityDialog } from "@/components/rpg/LogActivityDialog";
 import { Loader2, Zap, Lock } from "lucide-react";
 import { useActivitySession } from "@/hooks/useActivitySession";
 import { ActiveSessionPanel } from "@/components/rpg/ActiveSessionPanel";
+import { useFocusLock } from "@/hooks/useFocusLock";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -13,12 +14,17 @@ export default function Activities() {
   const p = usePlayer();
   const [openType, setOpenType] = useState<ActivityType | null>(null);
   const sess = useActivitySession();
+  const lock = useFocusLock();
 
   if (p.loading) return <div className="flex h-[60vh] items-center justify-center text-muted-foreground"><Loader2 className="mr-2 h-5 w-5 animate-spin" /> Loading…</div>;
 
   const pick = (id: string) => {
-    if (sess.session) {
-      toast.info("A session is already running. Finish or cancel it first.");
+    if (lock.isLocked) {
+      toast.info(
+        lock.source === "quest"
+          ? "A quest timer is running. Finish it before starting an activity."
+          : "A session is already running. Finish or cancel it first.",
+      );
       return;
     }
     const t = p.activityTypes.find(a => a.id === id);
@@ -32,6 +38,10 @@ export default function Activities() {
     difficulty: "easy" | "medium" | "hard",
     note?: string,
   ): Promise<{ ok: boolean; reason?: string }> => {
+    if (lock.isLocked && lock.source === "quest") {
+      toast.error("Finish your active quest before starting an activity session.");
+      return { ok: false, reason: "focus_locked_quest" };
+    }
     const r = sess.startSession({ typeId, subtype, duration, difficulty, note });
     if (!r.ok) {
       toast.error(r.reason === "session_active" ? "Finish your current session first." : "Could not start session.");
@@ -54,12 +64,15 @@ export default function Activities() {
       )}
 
       <section className="glass-strong rounded-3xl p-5 sm:p-6">
-        {sess.session && (
+        {lock.isLocked && (
           <div className="mb-3 flex items-center gap-2 rounded-xl border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-            <Lock className="h-3.5 w-3.5" /> Activities are locked until your session ends.
+            <Lock className="h-3.5 w-3.5" />
+            {lock.source === "quest"
+              ? "Activities are locked while a quest timer is running."
+              : "Activities are locked until your session ends."}
           </div>
         )}
-        <div className={cn(sess.session && "pointer-events-none opacity-40")}>
+        <div className={cn(lock.isLocked && "pointer-events-none opacity-40")}>
         <ActivityPicker types={p.activityTypes} onPick={pick} />
         </div>
       </section>
