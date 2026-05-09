@@ -4,7 +4,8 @@ import { Zap, Loader2, Timer } from "lucide-react";
 import { usePlayer, type ActivityType } from "@/hooks/usePlayer";
 import { LogActivityDialog } from "./LogActivityDialog";
 import { xpToNext } from "@/lib/progression";
-import { useActivitySession, formatRemaining } from "@/hooks/useActivitySession";
+import { useActivitySession } from "@/hooks/useActivitySession";
+import { useFocusLock, formatRemaining } from "@/hooks/useFocusLock";
 import { toast } from "sonner";
 
 /**
@@ -17,14 +18,16 @@ export const EarnXpBar = () => {
   const { pathname } = useLocation();
   const [openType, setOpenType] = useState<ActivityType | null>(null);
   const sess = useActivitySession();
+  const lock = useFocusLock();
 
   const onActivities = pathname.startsWith("/app/activities");
 
   const handleClick = () => {
     if (p.loading) return;
-    // If a session is running, route there instead of starting another.
-    if (sess.session) {
-      if (!onActivities) navigate("/app/activities");
+    // If ANY focus session is running (activity OR quest), route to its source.
+    if (lock.isLocked) {
+      const target = lock.source === "quest" ? "/app/quests" : "/app/activities";
+      if (!pathname.startsWith(target)) navigate(target);
       return;
     }
     if (onActivities) {
@@ -39,10 +42,10 @@ export const EarnXpBar = () => {
   const next = p.profile ? xpToNext(p.profile.level) : 0;
   const pct = p.profile && next > 0 ? Math.min(100, Math.round((p.profile.xp / next) * 100)) : 0;
 
-  const sessionLabel = sess.session
-    ? sess.isReady
+  const sessionLabel = lock.isLocked
+    ? lock.isReady
       ? "Session ready — claim"
-      : `Session ${formatRemaining(sess.remainingMs)}`
+      : `${lock.source === "quest" ? "Quest" : "Session"} ${formatRemaining(lock.remainingMs)}`
     : null;
 
   return (
@@ -67,7 +70,7 @@ export const EarnXpBar = () => {
             disabled={p.loading}
             className="group flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-primary px-5 py-3 font-display text-sm font-bold text-primary-foreground shadow-glow-primary transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 sm:flex-none sm:px-8"
           >
-            {p.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : sess.session ? <Timer className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
+            {p.loading ? <Loader2 className="h-4 w-4 animate-spin" /> : lock.isLocked ? <Timer className="h-4 w-4" /> : <Zap className="h-4 w-4" />}
             {sessionLabel ?? "Earn XP"}
           </button>
         </div>

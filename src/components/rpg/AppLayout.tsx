@@ -7,6 +7,7 @@ import { EarnXpBar } from "./EarnXpBar";
 import { CurrencyBadges } from "./CurrencyBadges";
 import { ClassOnboardingGate } from "./ClassOnboardingGate";
 import { AIGuide } from "./AIGuide";
+import { FocusLockBanner } from "./FocusLockBanner";
 
 const NAV = [
   { to: "/app",              icon: LayoutDashboard, label: "Dashboard" },
@@ -121,6 +122,8 @@ export const AppLayout = ({ children }: { children?: ReactNode }) => {
       <ClassOnboardingGate />
       {/* Floating AI guide */}
       <AIGuide />
+      {/* Global progression-lock banner (active while a timed quest/activity runs) */}
+      <FocusLockBanner />
     </div>
   );
 };
