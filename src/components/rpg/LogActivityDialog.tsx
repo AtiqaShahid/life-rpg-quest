@@ -3,6 +3,7 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Dialog, DialogPortal, DialogOverlay, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { ActivityType, usePlayer } from "@/hooks/usePlayer";
 import { ACTIVITY_CATALOG, DurationOption, Subtype } from "@/lib/activityCatalog";
+import { Play } from "lucide-react";
 import * as Lucide from "lucide-react";
 import { statMeta } from "@/lib/rpg";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,9 @@ type Props = {
   ) => Promise<{ ok: boolean; reason?: string } | void>;
 };
 
+const ALLOWED_MINUTES = [10, 15, 20, 30] as const;
+const DURATION_MULTIPLIER: Record<number, number> = { 10: 0.5, 15: 0.75, 20: 1, 30: 1.5 };
+
 const DIFFICULTIES: { id: Difficulty; label: string; mult: number }[] = [
   { id: "easy",   label: "Easy",   mult: 1.0 },
   { id: "medium", label: "Medium", mult: 1.5 },
@@ -36,6 +40,19 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Fixed timed durations — no instant XP. Synthesize XP for missing slots.
+  const sessionDurations: DurationOption[] = useMemo(() => {
+    if (!cat) return [];
+    const sorted = [...cat.durations].sort((a, b) => a.minutes - b.minutes);
+    const baseline = sorted[0] ?? { minutes: 10, label: "10 min", xp: 10 };
+    const perMin = baseline.xp / Math.max(1, baseline.minutes);
+    return ALLOWED_MINUTES.map((m) => {
+      const exact = cat.durations.find((d) => d.minutes === m);
+      if (exact) return exact;
+      return { minutes: m, label: `${m} min`, xp: Math.max(5, Math.round(perMin * m)) };
+    });
+  }, [cat]);
 
   useEffect(() => {
     if (open && cat) {
@@ -106,9 +123,9 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
               <Icon className="h-5 w-5" />
             </div>
             <div className="min-w-0 flex-1">
-              <DialogTitle className="truncate font-display text-base sm:text-lg">Log {type.label}</DialogTitle>
+              <DialogTitle className="truncate font-display text-base sm:text-lg">Start {type.label} session</DialogTitle>
               <DialogDescription className="truncate text-[11px] text-muted-foreground sm:text-xs">
-                Pick type, duration & difficulty
+                Commit to a duration. XP unlocks when the timer ends.
               </DialogDescription>
             </div>
             <DialogPrimitive.Close
@@ -149,10 +166,11 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
 
           {/* Duration */}
           <div>
-            <label className="font-mono text-[11px] tracking-widest text-muted-foreground">DURATION</label>
+            <label className="font-mono text-[11px] tracking-widest text-muted-foreground">SESSION DURATION</label>
             <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {cat.durations.map((d) => {
+              {sessionDurations.map((d) => {
                 const active = duration?.minutes === d.minutes;
+                const mult = DURATION_MULTIPLIER[d.minutes] ?? 1;
                 return (
                   <button
                     key={d.minutes}
@@ -166,11 +184,14 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
                     )}
                   >
                     <div className="font-display text-sm font-semibold">{d.label}</div>
-                    <div className="mt-1 font-mono text-xs text-secondary">+{d.xp} base</div>
+                    <div className="mt-1 font-mono text-[10px] text-secondary">×{mult.toFixed(2)} XP</div>
                   </button>
                 );
               })}
             </div>
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              You must complete the full timer to earn XP. Cancelling forfeits the reward.
+            </p>
           </div>
 
           {/* Difficulty */}
@@ -251,8 +272,8 @@ export const LogActivityDialog = ({ open, onOpenChange, type, onSubmit }: Props)
                     : "cursor-not-allowed bg-muted/40 text-muted-foreground",
                 )}
               >
-                {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {preview ? `Earn +${preview.final} XP` : "Pick a duration"}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                {duration ? `Start ${duration.minutes}-min session` : "Pick a duration"}
               </button>
             </div>
           </div>
