@@ -6,7 +6,7 @@
 
 ---
 
-#  Key Highlights (Recruiter Scan Section)
+#  Key Highlights
 
 * ⚙️ Event-driven progression engine with deterministic state updates
 * 🔄 Real-time multiplayer social + messaging system
