@@ -256,53 +256,55 @@ export const QuestCard = ({
         )}
       </div>
 
-      <div className="mt-1 flex shrink-0 flex-col gap-1">
-        {isCandidate && onSelect && (
-          <button
-            onClick={() => onSelect(quest.id)}
-            aria-label="Select this option"
-            title="Select this mission"
-            className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary transition-transform hover:scale-105"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" /> Select
-          </button>
-        )}
-        {!isCandidate && !isCompulsory && !quest.completed && !isTimed && (
-          <>
-            {isLocked ? (
-              onUnlock && (
-                <button onClick={() => onUnlock(quest.id)} aria-label="Unlock quest" title="Unlock"
-                  className="text-amber-300 hover:text-amber-200">
-                  <LockOpen className="h-4 w-4" />
+      {!readOnly && (
+        <div className="mt-1 flex shrink-0 flex-col gap-1">
+          {isCandidate && onSelect && (
+            <button
+              onClick={() => onSelect(quest.id)}
+              aria-label="Select this option"
+              title="Select this mission"
+              className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary transition-transform hover:scale-105"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> Select
+            </button>
+          )}
+          {!isCandidate && !isCompulsory && !quest.completed && !isTimed && (
+            <>
+              {isLocked ? (
+                onUnlock && (
+                  <button onClick={() => onUnlock(quest.id)} aria-label="Unlock quest" title="Unlock"
+                    className="text-amber-300 hover:text-amber-200">
+                    <LockOpen className="h-4 w-4" />
+                  </button>
+                )
+              ) : (
+                onLock && (
+                  <button onClick={() => onLock(quest.id)} aria-label="Lock quest" title="Lock to keep this quest"
+                    className="text-muted-foreground hover:text-amber-300">
+                    <Lock className="h-4 w-4" />
+                  </button>
+                )
+              )}
+              {onRegenerate && !isLocked && (
+                <button onClick={() => onRegenerate(quest.id)} aria-label="Regenerate slot" title="Regenerate"
+                  disabled={globallyLocked}
+                  className="text-muted-foreground hover:text-primary disabled:opacity-40">
+                  <RefreshCw className="h-4 w-4" />
                 </button>
-              )
-            ) : (
-              onLock && (
-                <button onClick={() => onLock(quest.id)} aria-label="Lock quest" title="Lock to keep this quest"
-                  className="text-muted-foreground hover:text-amber-300">
-                  <Lock className="h-4 w-4" />
-                </button>
-              )
-            )}
-            {onRegenerate && !isLocked && (
-              <button onClick={() => onRegenerate(quest.id)} aria-label="Regenerate slot" title="Regenerate"
-                disabled={globallyLocked}
-                className="text-muted-foreground hover:text-primary disabled:opacity-40">
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            )}
-          </>
-        )}
-        {onRemove && !isCompulsory && !isLocked && !isTimed && (
-          <button
-            onClick={() => onRemove(quest.id)}
-            aria-label="Remove quest"
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+              )}
+            </>
+          )}
+          {onRemove && !isCompulsory && !isLocked && !isTimed && (
+            <button
+              onClick={() => onRemove(quest.id)}
+              aria-label="Remove quest"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };
