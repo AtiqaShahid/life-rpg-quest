@@ -55,6 +55,7 @@ export default function Dashboard() {
   const p = usePlayer();
   const { user } = useAuth();
   const social = useSocial();
+  const { toast } = useToast();
 
   // ---- Today's activities ----
   const todayStr = new Date().toISOString().slice(0, 10);
