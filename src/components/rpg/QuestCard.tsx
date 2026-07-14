@@ -1,5 +1,5 @@
 import { Quest, QuestProgress, QuestRich } from "@/hooks/usePlayer";
-import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer } from "lucide-react";
+import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { getQuestTimerDuration } from "@/lib/questTimer";
@@ -20,6 +20,8 @@ type Props = {
   /** Disable starting/regenerating because another quest is currently running. */
   globallyLocked?: boolean;
   variant?: "default" | "candidate" | "compulsory";
+  /** Display-only mode: disables all actions so the card behaves as a preview. */
+  readOnly?: boolean;
 };
 
 const TYPE_TINT: Record<string, string> = {
@@ -42,6 +44,7 @@ function formatRemaining(ms: number) {
 export const QuestCard = ({
   quest, progress, onComplete, onRemove, onLock, onUnlock, onRegenerate, onSelect,
   onStart, onPause, onResume, onAbandon, globallyLocked = false, variant = "default",
+  readOnly = false,
 }: Props) => {
   const rich = quest as QuestRich;
   const qType = rich.quest_type ?? (quest.is_daily ? "daily" : "dynamic");
@@ -75,9 +78,10 @@ export const QuestCard = ({
 
   // For timer quests: only the timer-completion path awards XP.
   // For instant quests: the main button just completes.
-  const canStart = hasTimer && !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
-  const canInstantComplete = !hasTimer && !isCandidate && !quest.completed && !isTimed && !!onComplete && !globallyLocked;
-  const canCompleteNow = timerDone && !!onComplete;
+  // In readOnly mode all primary actions are disabled.
+  const canStart = !readOnly && hasTimer && !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
+  const canInstantComplete = !readOnly && !hasTimer && !isCandidate && !quest.completed && !isTimed && !!onComplete && !globallyLocked;
+  const canCompleteNow = !readOnly && timerDone && !!onComplete;
 
   return (
     <div
@@ -94,18 +98,20 @@ export const QuestCard = ({
     >
       <button
         disabled={
+          readOnly ||
           quest.completed || isCandidate ||
           (isTimed && !canCompleteNow) ||
           (!isTimed && !canStart && !canInstantComplete)
         }
         onClick={() => {
-          if (quest.completed || isCandidate) return;
+          if (readOnly || quest.completed || isCandidate) return;
           if (canCompleteNow) return onComplete(quest.id);
           if (canInstantComplete) return onComplete(quest.id);
           if (!isTimed && canStart) return onStart!(quest.id, parsedDuration ?? undefined);
         }}
         aria-label={
-          quest.completed ? "Quest completed"
+          readOnly ? "Preview only"
+            : quest.completed ? "Quest completed"
             : canCompleteNow ? "Claim XP"
             : isInProgress ? "Quest running"
             : isPaused ? "Quest paused"
@@ -114,8 +120,10 @@ export const QuestCard = ({
         }
         className={cn(
           "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-primary/40 transition-all",
-          quest.completed
-            ? "bg-gradient-primary text-primary-foreground"
+          readOnly
+            ? "bg-muted/40 text-muted-foreground cursor-default"
+            : quest.completed
+              ? "bg-gradient-primary text-primary-foreground"
             : canCompleteNow
               ? "bg-gradient-primary text-primary-foreground animate-pulse-glow"
             : isInProgress
@@ -127,7 +135,8 @@ export const QuestCard = ({
               : "bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary hover:shadow-glow-primary animate-pulse-glow"
         )}
       >
-        {quest.completed ? <Check className="h-5 w-5" />
+        {readOnly ? <Eye className="h-5 w-5" />
+          : quest.completed ? <Check className="h-5 w-5" />
           : canCompleteNow ? <Check className="h-5 w-5" />
           : isInProgress ? <Timer className="h-5 w-5" />
           : isPaused ? <Pause className="h-5 w-5" />
@@ -203,32 +212,34 @@ export const QuestCard = ({
                 style={{ width: `${timerPct}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              {isInProgress && !timerDone && onPause && (
-                <button onClick={() => onPause(quest.id)} disabled={(rich.pauses_used ?? 0) >= 2}
-                  className="inline-flex items-center gap-1 rounded-lg bg-muted/60 px-2 py-1 font-display text-[11px] font-semibold text-foreground ring-1 ring-border hover:bg-muted disabled:opacity-50">
-                  <Pause className="h-3.5 w-3.5" /> Pause ({2 - (rich.pauses_used ?? 0)} left)
-                </button>
-              )}
-              {isPaused && onResume && (
-                <button onClick={() => onResume(quest.id)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
-                  <Play className="h-3.5 w-3.5" /> Resume
-                </button>
-              )}
-              {timerDone && onComplete && (
-                <button onClick={() => onComplete(quest.id)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
-                  <Check className="h-3.5 w-3.5" /> Claim XP
-                </button>
-              )}
-              {onAbandon && (
-                <button onClick={() => onAbandon(quest.id)}
-                  className="ml-auto inline-flex items-center gap-1 rounded-lg bg-muted/40 px-2 py-1 font-display text-[11px] font-semibold text-rose-300 ring-1 ring-rose-400/30 hover:bg-rose-500/10">
-                  <X className="h-3.5 w-3.5" /> Abandon
-                </button>
-              )}
-            </div>
+            {!readOnly && (
+              <div className="mt-2 flex items-center gap-2">
+                {isInProgress && !timerDone && onPause && (
+                  <button onClick={() => onPause(quest.id)} disabled={(rich.pauses_used ?? 0) >= 2}
+                    className="inline-flex items-center gap-1 rounded-lg bg-muted/60 px-2 py-1 font-display text-[11px] font-semibold text-foreground ring-1 ring-border hover:bg-muted disabled:opacity-50">
+                    <Pause className="h-3.5 w-3.5" /> Pause ({2 - (rich.pauses_used ?? 0)} left)
+                  </button>
+                )}
+                {isPaused && onResume && (
+                  <button onClick={() => onResume(quest.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
+                    <Play className="h-3.5 w-3.5" /> Resume
+                  </button>
+                )}
+                {timerDone && onComplete && (
+                  <button onClick={() => onComplete(quest.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
+                    <Check className="h-3.5 w-3.5" /> Claim XP
+                  </button>
+                )}
+                {onAbandon && (
+                  <button onClick={() => onAbandon(quest.id)}
+                    className="ml-auto inline-flex items-center gap-1 rounded-lg bg-muted/40 px-2 py-1 font-display text-[11px] font-semibold text-rose-300 ring-1 ring-rose-400/30 hover:bg-rose-500/10">
+                    <X className="h-3.5 w-3.5" /> Abandon
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -245,53 +256,55 @@ export const QuestCard = ({
         )}
       </div>
 
-      <div className="mt-1 flex shrink-0 flex-col gap-1">
-        {isCandidate && onSelect && (
-          <button
-            onClick={() => onSelect(quest.id)}
-            aria-label="Select this option"
-            title="Select this mission"
-            className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary transition-transform hover:scale-105"
-          >
-            <CheckCircle2 className="h-3.5 w-3.5" /> Select
-          </button>
-        )}
-        {!isCandidate && !isCompulsory && !quest.completed && !isTimed && (
-          <>
-            {isLocked ? (
-              onUnlock && (
-                <button onClick={() => onUnlock(quest.id)} aria-label="Unlock quest" title="Unlock"
-                  className="text-amber-300 hover:text-amber-200">
-                  <LockOpen className="h-4 w-4" />
+      {!readOnly && (
+        <div className="mt-1 flex shrink-0 flex-col gap-1">
+          {isCandidate && onSelect && (
+            <button
+              onClick={() => onSelect(quest.id)}
+              aria-label="Select this option"
+              title="Select this mission"
+              className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary transition-transform hover:scale-105"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5" /> Select
+            </button>
+          )}
+          {!isCandidate && !isCompulsory && !quest.completed && !isTimed && (
+            <>
+              {isLocked ? (
+                onUnlock && (
+                  <button onClick={() => onUnlock(quest.id)} aria-label="Unlock quest" title="Unlock"
+                    className="text-amber-300 hover:text-amber-200">
+                    <LockOpen className="h-4 w-4" />
+                  </button>
+                )
+              ) : (
+                onLock && (
+                  <button onClick={() => onLock(quest.id)} aria-label="Lock quest" title="Lock to keep this quest"
+                    className="text-muted-foreground hover:text-amber-300">
+                    <Lock className="h-4 w-4" />
+                  </button>
+                )
+              )}
+              {onRegenerate && !isLocked && (
+                <button onClick={() => onRegenerate(quest.id)} aria-label="Regenerate slot" title="Regenerate"
+                  disabled={globallyLocked}
+                  className="text-muted-foreground hover:text-primary disabled:opacity-40">
+                  <RefreshCw className="h-4 w-4" />
                 </button>
-              )
-            ) : (
-              onLock && (
-                <button onClick={() => onLock(quest.id)} aria-label="Lock quest" title="Lock to keep this quest"
-                  className="text-muted-foreground hover:text-amber-300">
-                  <Lock className="h-4 w-4" />
-                </button>
-              )
-            )}
-            {onRegenerate && !isLocked && (
-              <button onClick={() => onRegenerate(quest.id)} aria-label="Regenerate slot" title="Regenerate"
-                disabled={globallyLocked}
-                className="text-muted-foreground hover:text-primary disabled:opacity-40">
-                <RefreshCw className="h-4 w-4" />
-              </button>
-            )}
-          </>
-        )}
-        {onRemove && !isCompulsory && !isLocked && !isTimed && (
-          <button
-            onClick={() => onRemove(quest.id)}
-            aria-label="Remove quest"
-            className="text-muted-foreground hover:text-destructive"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
-      </div>
+              )}
+            </>
+          )}
+          {onRemove && !isCompulsory && !isLocked && !isTimed && (
+            <button
+              onClick={() => onRemove(quest.id)}
+              aria-label="Remove quest"
+              className="text-muted-foreground hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

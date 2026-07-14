@@ -11,6 +11,7 @@ import { format } from "date-fns";
 import { statMeta } from "@/lib/rpg";
 import { subtypeLabel } from "@/lib/activityCatalog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 const DailyProgressChart = lazy(() => import("@/components/rpg/DailyProgressChart"));
 
@@ -54,6 +55,7 @@ export default function Dashboard() {
   const p = usePlayer();
   const { user } = useAuth();
   const social = useSocial();
+  const { toast } = useToast();
 
   // ---- Today's activities ----
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -188,7 +190,25 @@ export default function Dashboard() {
             ) : (
               pendingQuests.slice(0, 6).map(q => {
                 const progress = p.questProgress.find(qp => qp.quest_id === q.id);
-                return <QuestCard key={q.id} quest={q} progress={progress} onComplete={p.completeQuest} />;
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() =>
+                      toast({
+                        title: "Just a display",
+                        description: "Go to the Quests tab to select or complete this mission.",
+                      })
+                    }
+                    className="cursor-pointer"
+                  >
+                    <QuestCard
+                      quest={q}
+                      progress={progress}
+                      onComplete={p.completeQuest}
+                      readOnly
+                    />
+                  </div>
+                );
               })
             )}
           </div>
