@@ -195,7 +195,7 @@ export default function Dashboard() {
                     key={q.id}
                     onClick={() =>
                       toast({
-                        title: "Preview only",
+                        title: "Just a display",
                         description: "Go to the Quests tab to select or complete this mission.",
                       })
                     }
