@@ -6,11 +6,12 @@ import { CharacterCard } from "@/components/rpg/CharacterCard";
 import { StatusEffectsPanel } from "@/components/rpg/StatusEffectsPanel";
 import { QuestCard } from "@/components/rpg/QuestCard";
 import * as Lucide from "lucide-react";
-import { Scroll, Activity as ActivityIcon, TrendingUp, Trophy, Users, Crown, Shield } from "lucide-react";
+import { Scroll, Activity as ActivityIcon, TrendingUp, Trophy, Users, Crown, Shield, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { statMeta } from "@/lib/rpg";
 import { subtypeLabel } from "@/lib/activityCatalog";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/use-toast";
 
 const DailyProgressChart = lazy(() => import("@/components/rpg/DailyProgressChart"));
 
