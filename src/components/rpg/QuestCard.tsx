@@ -212,32 +212,34 @@ export const QuestCard = ({
                 style={{ width: `${timerPct}%` }}
               />
             </div>
-            <div className="mt-2 flex items-center gap-2">
-              {isInProgress && !timerDone && onPause && (
-                <button onClick={() => onPause(quest.id)} disabled={(rich.pauses_used ?? 0) >= 2}
-                  className="inline-flex items-center gap-1 rounded-lg bg-muted/60 px-2 py-1 font-display text-[11px] font-semibold text-foreground ring-1 ring-border hover:bg-muted disabled:opacity-50">
-                  <Pause className="h-3.5 w-3.5" /> Pause ({2 - (rich.pauses_used ?? 0)} left)
-                </button>
-              )}
-              {isPaused && onResume && (
-                <button onClick={() => onResume(quest.id)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
-                  <Play className="h-3.5 w-3.5" /> Resume
-                </button>
-              )}
-              {timerDone && onComplete && (
-                <button onClick={() => onComplete(quest.id)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
-                  <Check className="h-3.5 w-3.5" /> Claim XP
-                </button>
-              )}
-              {onAbandon && (
-                <button onClick={() => onAbandon(quest.id)}
-                  className="ml-auto inline-flex items-center gap-1 rounded-lg bg-muted/40 px-2 py-1 font-display text-[11px] font-semibold text-rose-300 ring-1 ring-rose-400/30 hover:bg-rose-500/10">
-                  <X className="h-3.5 w-3.5" /> Abandon
-                </button>
-              )}
-            </div>
+            {!readOnly && (
+              <div className="mt-2 flex items-center gap-2">
+                {isInProgress && !timerDone && onPause && (
+                  <button onClick={() => onPause(quest.id)} disabled={(rich.pauses_used ?? 0) >= 2}
+                    className="inline-flex items-center gap-1 rounded-lg bg-muted/60 px-2 py-1 font-display text-[11px] font-semibold text-foreground ring-1 ring-border hover:bg-muted disabled:opacity-50">
+                    <Pause className="h-3.5 w-3.5" /> Pause ({2 - (rich.pauses_used ?? 0)} left)
+                  </button>
+                )}
+                {isPaused && onResume && (
+                  <button onClick={() => onResume(quest.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
+                    <Play className="h-3.5 w-3.5" /> Resume
+                  </button>
+                )}
+                {timerDone && onComplete && (
+                  <button onClick={() => onComplete(quest.id)}
+                    className="inline-flex items-center gap-1 rounded-lg bg-gradient-primary px-2 py-1 font-display text-[11px] font-semibold text-primary-foreground shadow-glow-primary">
+                    <Check className="h-3.5 w-3.5" /> Claim XP
+                  </button>
+                )}
+                {onAbandon && (
+                  <button onClick={() => onAbandon(quest.id)}
+                    className="ml-auto inline-flex items-center gap-1 rounded-lg bg-muted/40 px-2 py-1 font-display text-[11px] font-semibold text-rose-300 ring-1 ring-rose-400/30 hover:bg-rose-500/10">
+                    <X className="h-3.5 w-3.5" /> Abandon
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
