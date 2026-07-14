@@ -44,6 +44,7 @@ function formatRemaining(ms: number) {
 export const QuestCard = ({
   quest, progress, onComplete, onRemove, onLock, onUnlock, onRegenerate, onSelect,
   onStart, onPause, onResume, onAbandon, globallyLocked = false, variant = "default",
+  readOnly = false,
 }: Props) => {
   const rich = quest as QuestRich;
   const qType = rich.quest_type ?? (quest.is_daily ? "daily" : "dynamic");
