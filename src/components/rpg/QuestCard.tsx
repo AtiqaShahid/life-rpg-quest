@@ -78,9 +78,10 @@ export const QuestCard = ({
 
   // For timer quests: only the timer-completion path awards XP.
   // For instant quests: the main button just completes.
-  const canStart = hasTimer && !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
-  const canInstantComplete = !hasTimer && !isCandidate && !quest.completed && !isTimed && !!onComplete && !globallyLocked;
-  const canCompleteNow = timerDone && !!onComplete;
+  // In readOnly mode all primary actions are disabled.
+  const canStart = !readOnly && hasTimer && !isCandidate && !quest.completed && !isTimed && !!onStart && !globallyLocked;
+  const canInstantComplete = !readOnly && !hasTimer && !isCandidate && !quest.completed && !isTimed && !!onComplete && !globallyLocked;
+  const canCompleteNow = !readOnly && timerDone && !!onComplete;
 
   return (
     <div
