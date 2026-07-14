@@ -190,7 +190,25 @@ export default function Dashboard() {
             ) : (
               pendingQuests.slice(0, 6).map(q => {
                 const progress = p.questProgress.find(qp => qp.quest_id === q.id);
-                return <QuestCard key={q.id} quest={q} progress={progress} onComplete={p.completeQuest} />;
+                return (
+                  <div
+                    key={q.id}
+                    onClick={() =>
+                      toast({
+                        title: "Preview only",
+                        description: "Go to the Quests tab to select or complete this mission.",
+                      })
+                    }
+                    className="cursor-pointer"
+                  >
+                    <QuestCard
+                      quest={q}
+                      progress={progress}
+                      onComplete={p.completeQuest}
+                      readOnly
+                    />
+                  </div>
+                );
               })
             )}
           </div>
