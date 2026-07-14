@@ -98,18 +98,20 @@ export const QuestCard = ({
     >
       <button
         disabled={
+          readOnly ||
           quest.completed || isCandidate ||
           (isTimed && !canCompleteNow) ||
           (!isTimed && !canStart && !canInstantComplete)
         }
         onClick={() => {
-          if (quest.completed || isCandidate) return;
+          if (readOnly || quest.completed || isCandidate) return;
           if (canCompleteNow) return onComplete(quest.id);
           if (canInstantComplete) return onComplete(quest.id);
           if (!isTimed && canStart) return onStart!(quest.id, parsedDuration ?? undefined);
         }}
         aria-label={
-          quest.completed ? "Quest completed"
+          readOnly ? "Preview only"
+            : quest.completed ? "Quest completed"
             : canCompleteNow ? "Claim XP"
             : isInProgress ? "Quest running"
             : isPaused ? "Quest paused"
@@ -118,8 +120,10 @@ export const QuestCard = ({
         }
         className={cn(
           "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-primary/40 transition-all",
-          quest.completed
-            ? "bg-gradient-primary text-primary-foreground"
+          readOnly
+            ? "bg-muted/40 text-muted-foreground cursor-default"
+            : quest.completed
+              ? "bg-gradient-primary text-primary-foreground"
             : canCompleteNow
               ? "bg-gradient-primary text-primary-foreground animate-pulse-glow"
             : isInProgress
@@ -131,7 +135,8 @@ export const QuestCard = ({
               : "bg-muted/60 text-muted-foreground hover:bg-primary/20 hover:text-primary hover:shadow-glow-primary animate-pulse-glow"
         )}
       >
-        {quest.completed ? <Check className="h-5 w-5" />
+        {readOnly ? <Eye className="h-5 w-5" />
+          : quest.completed ? <Check className="h-5 w-5" />
           : canCompleteNow ? <Check className="h-5 w-5" />
           : isInProgress ? <Timer className="h-5 w-5" />
           : isPaused ? <Pause className="h-5 w-5" />
