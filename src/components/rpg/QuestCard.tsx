@@ -1,5 +1,5 @@
 import { Quest, QuestProgress, QuestRich } from "@/hooks/usePlayer";
-import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer } from "lucide-react";
+import { Check, Sparkles, Trash2, Zap, Battery, BatteryLow, BatteryFull, Lock, LockOpen, RefreshCw, CheckCircle2, Play, Pause, X, Timer, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { getQuestTimerDuration } from "@/lib/questTimer";
