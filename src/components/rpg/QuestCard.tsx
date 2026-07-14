@@ -20,6 +20,8 @@ type Props = {
   /** Disable starting/regenerating because another quest is currently running. */
   globallyLocked?: boolean;
   variant?: "default" | "candidate" | "compulsory";
+  /** Display-only mode: disables all actions so the card behaves as a preview. */
+  readOnly?: boolean;
 };
 
 const TYPE_TINT: Record<string, string> = {
